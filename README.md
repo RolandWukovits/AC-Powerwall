@@ -18,6 +18,7 @@ Items/Modules/Devices the controller is using are:
 - 3x Mosfet Module to switch 12V LED-Indicators
 - 3 12V LED-Indicators (red, yellow, green)
 - SD-Card Module
+- 5A AC-current sensor module to be connected on the inverter AC connection (you might have to use a 10A one)
 - ESP01 Module (ESP8266)
 - 12 way Rotary Switch as Mode selector
 - 13x 10k, 2x 1k, 1x 2k, 1x 830R 1/8W resistors
@@ -34,4 +35,7 @@ Logic:
 - 1 Mixed metered/timer mode (M1/T1)
 - 4 manual modes (3 for chargers, 1 for discharge)
 - 4 setting modes (limits, parameters, timers, clock)
+- Battery logic to be customized. You will have to enter your particular voltage curve of your battery. SOC can be 
+  calculated with enough precision even for LIFEPO chemistry but requires some effort :) You would still have to use a
+  Coulomb-meter for monitoring, but you can reset it from information you get from the controller.
 
