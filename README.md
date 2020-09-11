@@ -1,6 +1,7 @@
 # AC-Powerwall *current software version 1.00.021/10.09.2020* Wifi not yet included!
 
-This repository contains code and documentation files from my YouTube "The AC-Powerwall Project" on "Roland W" channel. 
+This repository contains code and documentation files from my YouTube "The AC-Powerwall Project" on "Roland W" channel.
+Playlist: https://www.youtube.com/playlist?list=PLz3GU7wMX4_P-K7Ht42iucupu2CXGZh10
 It is meant for a controller based on a Mega 2560, and files can be used freely for private purpose!
 While it is appreciated to give an appropriate donation if you have used this code for your work. Thx
 
