@@ -1,5 +1,5 @@
 // This is beta-software for my AC-powerwall controller
-// Version 1.00.021 (complete edition), 10.09.2020
+// Version 1.00.25 (complete edition), 16.09.2020
 // Author and system designer: Roland Wukovits
 // e-mail: acpw@thehillside.net
 // The code, or parts of it, can be used for private consumption, as
@@ -137,7 +137,7 @@ RTCDateTime dt;
 DHT HT(sensepin,DHT11);
 float humidity;
 float tempC;
-int fancounter;
+float fancounter;
 // Lightswitch
 int lux;
 #define lightPin 4
@@ -233,6 +233,9 @@ int CtwoAmps=30;
 int settypeofbatt;
 int setConeAmps;
 int setCtwoAmps;
+int corrindchg;
+int corrindinv;
+int corrindrest;
 //Timer Variables
 int T1C1On=8;
 int T1C2On=10;
@@ -401,7 +404,7 @@ void setup()
   lcd.setCursor(0,2);
   lcd.print("acpw@thehillside.net");
   lcd.setCursor(0,3);
-  lcd.print("V1.00.21/10.09.2020");
+  lcd.print("V1.00.25/16.09.2020");
   
    
   HT.begin();
@@ -595,16 +598,20 @@ ledcounter++;
   CheckFan();
 
   currentcounter++;
-  if (currentcounter==30){
+  if (currentcounter>=30){
     currentcounter=0;
     minCurrent=32768;
     maxCurrent=32768;
+  }
+
+  if (currentcounter==5 or currentcounter==15 or currentcounter==25) {
+    BlynkDataTransmit();
   }
   
  }
 
 innercounter++;
- if (currentcounter==1 and innercounter==100){
+ if (currentcounter==1 and innercounter>=100){
   Currentaquisition();
   innercounter=0;
  }
@@ -664,7 +671,7 @@ if (battSOC>=maximumSOC) {
    if (realpower>=((triggerpowermode1*10)+(50*ConeAmps)+(50*CtwoAmps))) {
      digitalWrite(relayPin1,LOW);
      chargerone=1;
-     if (typeofbatt==1 and battSOC<=88) {
+     if (typeofbatt==1 and battSOC<=86) {
      digitalWrite(relayPin2,LOW);
      chargertwo=1;
      }
@@ -818,22 +825,32 @@ else {
  // battery type and inversed
   lcd.setCursor(0,3);  
   if (typeofbatt==0) { 
-    lcd.print("LIPO      "); 
+    lcd.print("LIPO     "); 
   } 
   if (typeofbatt==1) { 
-    lcd.print("LIFEPO    ");
+    lcd.print("LIFEPO   ");
   } 
   if (typeofbatt==2) { 
-    lcd.print("NMC       ");
+    lcd.print("NMC      ");
   } 
  
-  lcd.setCursor(12,3);
+  lcd.setCursor(9,3);
   if (invertreadout==1) { 
-    lcd.print("inversed");
+    lcd.print("invd  ");
   }
   if (invertreadout==0) { 
-    lcd.print("normal ");
+    lcd.print("norm  ");
   }
+
+  lcd.setCursor(15,3);
+    lcd.print(corrindrest);
+    lcd.print("/");
+    lcd.print(corrindchg);
+    lcd.print("/");
+    lcd.print(corrindinv);
+   
+
+  
 }
 
 
@@ -946,7 +963,7 @@ if (battSOC>=95) {
    if (realpower>=((triggerpowermode2*-10)+(50*ConeAmps)+(50*CtwoAmps))) {
      digitalWrite(relayPin1,LOW);
      chargerone=1;
-     if (typeofbatt==1 and battSOC<=88) {
+     if (typeofbatt==1 and battSOC<=86) {
      digitalWrite(relayPin2,LOW);
      chargertwo=1;
      }
@@ -1097,16 +1114,34 @@ else {
   lcd.print(humidity); 
 
 
- // battery type and inversed
-lcd.setCursor(0,3);  
-  if (typeofbatt==0) { lcd.print("LIPO        "); } 
-  if (typeofbatt==1) { lcd.print("LIFEPO      "); } 
-  if (typeofbatt==2) { lcd.print("NMC         "); } 
-lcd.setCursor(13,3);
-  if (invertreadout==1) { lcd.print("inversed"); }
-  if (invertreadout==0) { lcd.print("normal  "); }
-}
+// battery type and inversed
+  lcd.setCursor(0,3);  
+  if (typeofbatt==0) { 
+    lcd.print("LIPO     "); 
+  } 
+  if (typeofbatt==1) { 
+    lcd.print("LIFEPO   ");
+  } 
+  if (typeofbatt==2) { 
+    lcd.print("NMC      ");
+  } 
+ 
+  lcd.setCursor(9,3);
+  if (invertreadout==1) { 
+    lcd.print("invd  ");
+  }
+  if (invertreadout==0) { 
+    lcd.print("norm  ");
+  }
 
+  lcd.setCursor(15,3);
+    lcd.print(corrindrest);
+    lcd.print("/");
+    lcd.print(corrindchg);
+    lcd.print("/");
+    lcd.print(corrindinv);
+
+}
   
  // Batt discharge
    invertertime=(dt.hour);
@@ -1673,7 +1708,7 @@ if (T2C2Off>T2C2On) {
     lcd.setCursor(0,1);
     lcd.print("C1:ON C2:ON Inv:OFF ");
     digitalWrite(relayPin1,LOW);
-     if (typeofbatt==1 and battSOC<=88) {
+     if (typeofbatt==1 and battSOC<=86) {
      digitalWrite(relayPin2,LOW);
      }
      else {
@@ -2067,7 +2102,7 @@ if (powercounter==45) {
     lcd.setCursor(0,1);
     lcd.print("C1:ON C2:ON Inv:OFF ");
     digitalWrite(relayPin1,LOW);
-     if (typeofbatt==1 and battSOC<=88) {
+     if (typeofbatt==1 and battSOC<=86) {
      digitalWrite(relayPin2,LOW);
      }
      else {
@@ -2133,8 +2168,6 @@ if (powercounter==45) {
   lcd.print(dt.second);
 }
  else {
-
- if (timermatch==0 and timer2match==0 and timer3match==0){
     lcd.setCursor(0,0);
   lcd.print("Mode 4b: Mixed T1/M1");
   lcd.setCursor(0,1);
@@ -2159,59 +2192,47 @@ if (powercounter==45) {
   else {
     lcd.print("^");
   }
+
+
 // Temp and Hum
+
   lcd.setCursor(0,2);
   lcd.print("Temp:");
   lcd.print(tempC);
   lcd.setCursor(12,2);
   lcd.print("RH:");
   lcd.print(humidity); 
- // battery type and inversed
-lcd.setCursor(0,3);  
-  if (typeofbatt==0) { lcd.print("LIPO        "); } 
-  if (typeofbatt==1) { lcd.print("LIFEPO      "); } 
-  if (typeofbatt==2) { lcd.print("NMC         "); } 
-lcd.setCursor(13,3);
-  if (invertreadout==1) { lcd.print("inversed"); }
-  if (invertreadout==0) { lcd.print("normal  "); }
-}
-else{
-  lcd.setCursor(0,0);
-  lcd.print("Mode 4b: Mixed T1/M1");
-  lcd.setCursor(0,1);
-  lcd.print("C1: ");
-  lcd.setCursor(4,1);
-  lcd.print("         ");
-  lcd.setCursor(4,1);
-  lcd.print(T1C1On);
-  lcd.print("-");  
-  lcd.print(T1C1Off);
-  lcd.setCursor(13,1);
-  lcd.print("Timer 1");
-  lcd.setCursor(0,2);
-  lcd.print("C2: ");
-  lcd.setCursor(4,2);
-  lcd.print("         ");
-  lcd.setCursor(4,2);
-  lcd.print(T1C2On);
-  lcd.print("-");  
-  lcd.print(T1C2Off);
-  lcd.setCursor(13,2);
-  lcd.print("Timer 1");
-  lcd.setCursor(0,3);
-  lcd.print("Inv: ");
-  lcd.setCursor(5,3);
-  lcd.print("        ");
-  lcd.setCursor(5,3);
-  lcd.print(T1InvOn);
-  lcd.print("-");  
-  lcd.print(T1InvOff);
-  lcd.setCursor(13,3);
-  lcd.print("Timer 1");
+
+
+// battery type and inversed
+  lcd.setCursor(0,3);  
+  if (typeofbatt==0) { 
+    lcd.print("LIPO     "); 
+  } 
+  if (typeofbatt==1) { 
+    lcd.print("LIFEPO   ");
+  } 
+  if (typeofbatt==2) { 
+    lcd.print("NMC      ");
+  } 
+ 
+  lcd.setCursor(9,3);
+  if (invertreadout==1) { 
+    lcd.print("invd  ");
+  }
+  if (invertreadout==0) { 
+    lcd.print("norm  ");
+  }
+
+  lcd.setCursor(15,3);
+    lcd.print(corrindrest);
+    lcd.print("/");
+    lcd.print(corrindchg);
+    lcd.print("/");
+    lcd.print(corrindinv);
  }
 
-}
-
+    
 // Batt discharge
 
 
@@ -2463,7 +2484,7 @@ void Mode7(){
     lcd.setCursor(0,1);
     lcd.print("C1:ON C2:ON Inv:OFF ");
     digitalWrite(relayPin1,LOW);
-     if (typeofbatt==1 and battSOC<=88) {
+     if (typeofbatt==1 and battSOC<=86) {
      digitalWrite(relayPin2,LOW);
      chargertwo=1;
      }
@@ -3231,7 +3252,7 @@ void Mode10(){
   lcd.setCursor(12,2);
   lcd.print("Max:");
   lcd.setCursor(16,2);
-  lcd.print("  ");
+  lcd.print("   ");
   lcd.setCursor(16,2);
   lcd.print(setmaximumSOC);
   lcd.setCursor(19,2);
@@ -4026,11 +4047,21 @@ if (ACPWdata){
 
 }
 
+
+void BlynkDataTransmit(){
+
+//  Blynk.virtualWrite(V5, millis() / 1000);
+
+
+  
+}
+
+
 void Currentaquisition (){
 
 if (inverter==1){
 
-readCurrent=ads.readADC_SingleEnded(2);  
+readCurrent=ads.readADC_SingleEnded(1);  
 
 if (readCurrent<minCurrent){
   minCurrent=readCurrent;
@@ -4040,6 +4071,8 @@ if (readCurrent>maxCurrent){
 }
 
 diffCurrent=maxCurrent-minCurrent;
+
+diffCurrent=55000;    // for test as long no sensor, to be removed *******************
   
 }
 
@@ -4050,19 +4083,20 @@ void CheckFan(){
 
    humidity=HT.readHumidity();
    tempC=HT.readTemperature();
-    
+   
+ if (tempC>=fanActtemp){
+  fancounter=100;
+ }   
 
-  if (tempC>=fanActtemp or fancounter>0) {
+  if (fancounter>0) {
   digitalWrite(relayPin4,LOW);
-  fancounter=fancounter--;
+  fancounter--;
   }
   else {
   digitalWrite(relayPin4,HIGH);
  }
 
-if (tempC>=fanActtemp){
-  fancounter=100;
-}
+
 
 }
 
@@ -4086,68 +4120,85 @@ void getVoltage(){
 void getSOC() {
   
 SOCvoltage=battvoltage;
+corrindchg=0;
+corrindinv=0;
+corrindrest=0;
 
 if (typeofbatt==1){
   if (battvoltage>=54.9){
   if (chargerone==1) {         //correcting by charger voltage 
-  SOCvoltage=SOCvoltage-(ConeAmps*0.08);
+  SOCvoltage=SOCvoltage-(ConeAmps*0.058);
+  corrindchg=7;
   }
   if (chargertwo==1) {         //correcting by charger voltage
-  SOCvoltage=SOCvoltage-(CtwoAmps*0.08);
+  SOCvoltage=SOCvoltage-(CtwoAmps*0.058);
+  corrindchg=7;
   }
   }
   
-  if (battvoltage>=54.7 and battvoltage<54.9){
+  if (battvoltage>=54.70 and battvoltage<54.9){
   if (chargerone==1) {         //correcting by charger voltage 
-  SOCvoltage=SOCvoltage-(ConeAmps*0.055);
+  SOCvoltage=SOCvoltage-(ConeAmps*0.048);
+  corrindchg=6;
   }
   if (chargertwo==1) {         //correcting by charger voltage
-  SOCvoltage=SOCvoltage-(CtwoAmps*0.055);
+  SOCvoltage=SOCvoltage-(CtwoAmps*0.048);
+  corrindchg=6;
   }
   }
 
-   if (battvoltage>=54.4 and battvoltage<54.7){
+   if (battvoltage>=54.4 and battvoltage<54.70){
   if (chargerone==1) {         //correcting by charger voltage 
-  SOCvoltage=SOCvoltage-(ConeAmps*0.041);
+  SOCvoltage=SOCvoltage-(ConeAmps*0.039);
+  corrindchg=5;
   }
   if (chargertwo==1) {         //correcting by charger voltage
-  SOCvoltage=SOCvoltage-(CtwoAmps*0.041);
+  SOCvoltage=SOCvoltage-(CtwoAmps*0.039);
+  corrindchg=5;
   }
   }
   
-  if (battvoltage>=54.0 and battvoltage<54.4){
+  if (battvoltage>=54.05 and battvoltage<54.4){
   if (chargerone==1) {         //correcting by charger voltage 
-  SOCvoltage=SOCvoltage-(ConeAmps*0.032);
+  SOCvoltage=SOCvoltage-(ConeAmps*0.030);
+  corrindchg=4;
   }
   if (chargertwo==1) {         //correcting by charger voltage
-  SOCvoltage=SOCvoltage-(CtwoAmps*0.032);
+  SOCvoltage=SOCvoltage-(CtwoAmps*0.030);
+  corrindchg=4;
   }
   }
 
-  if (battvoltage>=53.6 and battvoltage<54.0){
+  if (battvoltage>=53.6 and battvoltage<54.05){
   if (chargerone==1) {         //correcting by charger voltage 
-  SOCvoltage=SOCvoltage-(ConeAmps*0.025);
+  SOCvoltage=SOCvoltage-(ConeAmps*0.024);
+  corrindchg=3;
   }
   if (chargertwo==1) {         //correcting by charger voltage
-  SOCvoltage=SOCvoltage-(CtwoAmps*0.025);
+  SOCvoltage=SOCvoltage-(CtwoAmps*0.024);
+  corrindchg=3;
   }
   }
   
   if (battvoltage>=53.1 and battvoltage<53.6){
   if (chargerone==1) {         //correcting by charger voltage 
   SOCvoltage=SOCvoltage-(ConeAmps*0.021);
+  corrindchg=2;
   }
   if (chargertwo==1) {         //correcting by charger voltage
   SOCvoltage=SOCvoltage-(CtwoAmps*0.021);
+  corrindchg=2;
   }
   }
   
   if (battvoltage<53.1) {
   if (chargerone==1) {         //correcting by charger voltage 
   SOCvoltage=SOCvoltage-(ConeAmps*0.017);
+  corrindchg=1;
   }
   if (chargertwo==1) {         //correcting by charger voltage
   SOCvoltage=SOCvoltage-(CtwoAmps*0.017);
+  corrindchg=1;
   }
   }
   
@@ -4155,14 +4206,37 @@ if (typeofbatt==1){
 else {
   if (chargerone==1) {         //correcting by charger voltage 
   SOCvoltage=SOCvoltage-(ConeAmps*0.02);
+  corrindchg=2;
   }
   if (chargertwo==1) {         //correcting by charger voltage
   SOCvoltage=SOCvoltage-(CtwoAmps*0.02);
+  corrindchg=2;
   }
 }
 
 if (inverter==1) {         //correcting by inverter voltage by Current module
-  SOCvoltage=SOCvoltage+(diffCurrent*0.0000107);
+  SOCvoltage=SOCvoltage+(diffCurrent*0.0000109);
+  if (diffCurrent>=60000){
+    corrindinv=7;
+    }
+  if (diffCurrent>=50000 and diffCurrent<60000){
+    corrindinv=6;
+    } 
+   if (diffCurrent>=40000 and diffCurrent<50000){
+    corrindinv=5;
+    } 
+   if (diffCurrent>=30000 and diffCurrent<40000){
+    corrindinv=4;
+    } 
+   if (diffCurrent>=20000 and diffCurrent<30000){
+    corrindinv=3;
+    } 
+   if (diffCurrent>=10000 and diffCurrent<20000){
+    corrindinv=2;
+    }  
+   if (diffCurrent<10000){
+    corrindinv=1;
+    }   
 }
 
 if (SOCfreeze==0) {                    // after load change do not check SOC for around 1 min
@@ -4237,6 +4311,7 @@ if (typeofbatt==1) {                     // LIFEPO
 
 if (idlestatus==1) {                           // correcting voltage sag when batt idling for longer
   SOCvoltage=SOCvoltage+0.15;
+  corrindrest=1;
 }
 
 if (SOCvoltage<=54.05) {
