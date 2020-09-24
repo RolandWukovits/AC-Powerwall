@@ -1,5 +1,6 @@
+
 // This is beta-software for my AC-powerwall controller
-// Version 1.00.25 (complete edition), 16.09.2020
+// Version 1.00.27 (complete edition), 21.09.2020
 // Author and system designer: Roland Wukovits
 // e-mail: acpw@thehillside.net
 // The code, or parts of it, can be used for private consumption, as
@@ -34,7 +35,9 @@
 // Include libraries for the SD module
 #include <SD.h>
 #include <SPI.h>
- 
+// Watchdog
+#include <avr/wdt.h>
+
 // Define LCD pinout
 const int  en = 2, rw = 1, rs = 0, d4 = 4, d5 = 5, d6 = 6, d7 = 7, bl = 3;
  // Define I2C Address - change if reqiuired
@@ -62,12 +65,12 @@ LiquidCrystal_I2C lcd(i2c_addr, en, rw, rs, d4, d5, d6, d7, bl, POSITIVE);
 #define IDLE                4
 #define WAITING_NEXT_POLL   5
 
-#define READ_COIL_STATUS          0x01 // Reads the ON/OFF status of discrete outputs (0X references, coils) in the slave.
-#define READ_INPUT_STATUS         0x02 // Reads the ON/OFF status of discrete inputs (1X references) in the slave.
-#define READ_HOLDING_REGISTERS    0x03 // Reads the binary contents of holding registers (4X references) in the slave.
-#define READ_INPUT_REGISTERS      0x04 // Reads the binary contents of input registers (3X references) in the slave. Not writable.
-#define FORCE_MULTIPLE_COILS      0x0F // Forces each coil (0X reference) in a sequence of coils to either ON or OFF.
-#define PRESET_MULTIPLE_REGISTERS 0x10 // Presets values into a sequence of holding registers (4X references).
+#define READ_COIL_STATUS          0x01
+#define READ_INPUT_STATUS         0x02
+#define READ_HOLDING_REGISTERS    0x03
+#define READ_INPUT_REGISTERS      0x04
+#define FORCE_MULTIPLE_COILS      0x0F
+#define PRESET_MULTIPLE_REGISTERS 0x10
 
 #define MB_VALID_DATA     0x00
 #define MB_INVALID_ID     0xE0
@@ -94,12 +97,11 @@ LiquidCrystal_I2C lcd(i2c_addr, en, rw, rs, d4, d5, d6, d7, bl, POSITIVE);
 #endif
 
 #define MB_SERIAL_PORT &Serial1   // Arduino has only one serial port, Mega has 3 serial ports.
-// if use Serial 0, remember disconnect Tx (pin0) when upload sketch, then re-connect
 #define MB_BAUDRATE 9600          // baud 2400 for SDM120, 9600 for X835
 #define MB_BYTEFORMAT     SERIAL_8N2    // Prty n
 #define TxEnablePin       47
 #define ID_1  1                       // id 001  modbus id of the energy monitor
-#define REFRESH_INTERVAL  4000        // refresh time, 4 SECONDS
+#define REFRESH_INTERVAL  5000        // refresh time, 5 SECONDS
 #define POW_ADR 0x0010    // measured power X835/phase3  (0x000C for SDM120 or X835/phase1, 0x000E for X835/phase2
 
 modbusMaster MBserial(MB_SERIAL_PORT, TxEnablePin);  // instance to collect data using Modbus protocol over RS485
@@ -116,14 +118,12 @@ int triggerpowermode2=30;  //  minimum power available for mode 2 / 10 (allow im
 int settriggerpowermode1;
 int settriggerpowermode2;
 float realpower=0;
-int chargerone=0;
-int chargertwo=0;
-int inverter=0;
-int invertreadout=0;
-int settypeofmeter;
-int setinvertreadout;
-int trueread;
-
+byte chargerone=0;
+byte chargertwo=0;
+byte inverter=0;
+byte invertreadout=0;
+byte setinvertreadout;
+byte trueread;
  
 // Rotary Encoder Inputs
  #define CLK 43
@@ -138,9 +138,6 @@ DHT HT(sensepin,DHT11);
 float humidity;
 float tempC;
 float fancounter;
-// Lightswitch
-int lux;
-#define lightPin 4
 // Relays module
 #define relayPin1 34               // Charger 1
 #define relayPin2 35               // Charger 2
@@ -148,13 +145,13 @@ int lux;
 #define relayPin4 37               // Fans
 #define relayPin5 38               // Inverter Capacitor Precharging
 #define relayPin6 39               // empty
-int relayAct1=0;
-int relayAct2=0;
-int relayAct3=0;
-int relayAct4=0;
+byte relayAct1=0;
+byte relayAct2=0;
+byte relayAct3=0;
+byte relayAct4=0;
 int relaycycletime=200;    // set for the charger activation cycle time in loops
 int prechargedelay=2500;   // set for inverter capacitor precharging in milliseconds
-int stopdelay;
+byte stopdelay;
 // Mode Switch
 #define Mode1Pin 22
 #define Mode2Pin 23
@@ -168,124 +165,127 @@ int stopdelay;
 #define Mode10Pin 31
 #define Mode11Pin 32
 #define Mode12Pin 33
-int mode;                  
-int autoaltnmode;
+byte mode;                  
 // Rotary switch
 int counter=1; 
 int currentStateCLK=0;
 int previousStateCLK=0; 
-int setpos=0;
-int switchpress=1;
-int switchpressstop=0;
-int setday=1;
-int setmonth=1;
+byte setpos=0;
+byte switchpress=1;
+byte switchpressstop=0;
+byte setday=1;
+byte setmonth=1;
 int setyear=2020;
-int sethour=0;
-int setminute=0;
-int setsecond=0;
-int buttonrelease=0;
+byte sethour=0;
+byte setminute=0;
+byte setsecond=0;
+byte buttonrelease=0;
 // Voltage divider
 float calibrationvalue;
 float voltread;
 float battvoltage;
 float fineadjustment=0;
-float fineadjustmentbyte=20;          //* before int
-float setfineadjustmentbyte;          //*
-int battSOC;
-int SOCfreeze;
-int idlestatus;
-int oldidlestatus;
-// #define voltPin A0
-int minimumSOC=10;
-int setminimumSOC;
-int maximumSOC=90;
-int setmaximumSOC;
-int fanAct=0;
-float setfanActtemp;                  //* before int
-float fanActtemp=30;                  //*
+float fineadjustmentbyte=20;          
+float setfineadjustmentbyte;          
+byte battSOC;
+byte SOCfreeze;
+byte idlestatus;
+byte oldidlestatus;
+byte minimumSOC=10;
+byte setminimumSOC;
+byte maximumSOC=90;
+byte setmaximumSOC;
+byte fanAct=0;
+float setfanActtemp;                 
+float fanActtemp=30;                 
 long loopcounter=0;
 float averagevolt;
 float holdvolt;
 int voltcounter=1;
 float SOCvoltage;
-long checkSDM120=0;
-int showpower=1;
-int setshowpower;
-int inverteravailable;
+byte showpower=1;
+byte setshowpower;
+byte inverteravailable;
 // EEPROM
-int EEPROMaddress = 0;
+byte EEPROMaddress = 0;
 byte EEPROMvalue[30];         //Array accomodating 30 stored values, increase if needed
 //LED announciators
 long ledcounter=0;
-int LEDgreen;
-int LEDred;
-int LEDyellow;
-int greencounter=0;
-int chargercounter=0;
-int invertercounter=0;
+byte LEDgreen;
+byte LEDred;
+byte LEDyellow;
+byte greencounter=0;
+byte chargercounter=0;
+byte invertercounter=0;
 #define greenpin 5
 #define redpin 6
 #define yellowpin 7
 // Parameters
-int typeofbatt=1;  //0=LIPO, 1=LIFEPO, 2=NMC
-int ConeAmps=20;
-int CtwoAmps=30;
-int settypeofbatt;
-int setConeAmps;
-int setCtwoAmps;
-int corrindchg;
-int corrindinv;
-int corrindrest;
+byte typeofbatt=1;  //0=LIPO, 1=LIFEPO, 2=NMC
+byte ConeAmps=20;
+byte CtwoAmps=30;
+byte settypeofbatt;
+byte setConeAmps;
+byte setCtwoAmps;
+byte corrindchg;
+byte corrindinv;
+byte corrindrest;
 //Timer Variables
-int T1C1On=8;
-int T1C2On=10;
-int T1InvOn=18;
-int T1C1Off=15;
-int T1C2Off=16;
-int T1InvOff=7;
-int setT1C1On;
-int setT1C2On;
-int setT1InvOn;
-int setT1C1Off;
-int setT1C2Off;
-int setT1InvOff;
-int T2C1On=8;
-int T2C2On=10;
-int T2InvOn=18;
-int T2C1Off=15;
-int T2C2Off=16;
-int T2InvOff=7;
-int setT2C1On;
-int setT2C2On;
-int setT2InvOn;
-int setT2C1Off;
-int setT2C2Off;
-int setT2InvOff;
-int timermatch;
-int timer2match;
-int timer3match;
-int invertertime;
-int C1time;
-int C2time;
-int showC1On;
-int showC2On;
-int showInvOn;
-int showC1Off;
-int showC2Off;
-int showInvOff;
-int actC1Timer;
-int actC2Timer;
-int actInvTimer;
-int NormInvOn=18;
-int NormInvOff=7;
-int setNormInvOn;
-int setNormInvOff;
+byte T1C1On=8;
+byte T1C2On=10;
+byte T1InvOn=18;
+byte T1C1Off=15;
+byte T1C2Off=16;
+byte T1InvOff=7;
+byte setT1C1On;
+byte setT1C2On;
+byte setT1InvOn;
+byte setT1C1Off;
+byte setT1C2Off;
+byte setT1InvOff;
+byte T2C1On=8;
+byte T2C2On=10;
+byte T2InvOn=18;
+byte T2C1Off=15;
+byte T2C2Off=16;
+byte T2InvOff=7;
+byte setT2C1On;
+byte setT2C2On;
+byte setT2InvOn;
+byte setT2C1Off;
+byte setT2C2Off;
+byte setT2InvOff;
+byte timermatch;
+byte timer2match;
+byte timer3match;
+byte invertertime;
+byte C1time;
+byte C2time;
+byte showC1On;
+byte showC2On;
+byte showInvOn;
+byte showC1Off;
+byte showC2Off;
+byte showInvOff;
+byte actC1Timer;
+byte actC2Timer;
+byte actInvTimer;
+byte NormInvOn=18;
+byte NormInvOff=7;
+byte setNormInvOn;
+byte setNormInvOff;
+byte setDreset;
+byte setDresethr;
+byte setDresetmin;
+byte Dreset=0;
+byte Dresethr=7;
+byte Dresetmin=5;
 // ADS1115
 Adafruit_ADS1115 ads;
 // SD module
 File ACPWdata;
 const int CS=53;
-int SDavail;
+byte SDavail;
 float chargeronelog;
 float chargertwolog;
 float inverterlog;
@@ -300,8 +300,9 @@ int innercounter;
  
 void setup()
 {
-
-   SERIAL_BEGIN(9600);
+  
+  wdt_disable();
+  // SERIAL_BEGIN(9600);
   //check for EEPROM data and read
   for (EEPROMaddress=0;EEPROMaddress<30;EEPROMaddress++) {
     EEPROMvalue[EEPROMaddress]=EEPROM.read(EEPROMaddress);
@@ -335,10 +336,10 @@ void setup()
      EEPROM.write(23,fineadjustmentbyte);
      EEPROM.write(24,NormInvOn);
      EEPROM.write(25,NormInvOff);
-     EEPROM.write(26,1);                        // spare slot
-     EEPROM.write(27,1);                        // spare slot
-     EEPROM.write(28,1);
-     EEPROM.write(29,1);
+     EEPROM.write(26,Dreset);                      
+     EEPROM.write(27,Dresethr);                  
+     EEPROM.write(28,Dresetmin);
+     EEPROM.write(29,1);                    // spare slot
   }
   else {
      minimumSOC= EEPROMvalue[1];
@@ -391,10 +392,18 @@ void setup()
      setNormInvOn=NormInvOn;
      NormInvOff=EEPROMvalue[25];
      setNormInvOff=NormInvOff;
+     Dreset=EEPROMvalue[26];
+     setDreset=Dreset;
+     Dresethr=EEPROMvalue[27];
+     setDresethr=Dresethr;
+     Dresetmin=EEPROMvalue[28];
+     setDresetmin=Dresetmin;
   }
  
   // Initialize the rtc object
   clock.begin();
+
+
   // Set display type as 20 char, 4 rows
   lcd.begin(20,4);
   
@@ -404,13 +413,10 @@ void setup()
   lcd.setCursor(0,2);
   lcd.print("acpw@thehillside.net");
   lcd.setCursor(0,3);
-  lcd.print("V1.00.25/16.09.2020");
+  lcd.print("V1.00.27/21.09.2020");
   
    
   HT.begin();
-
-  // Light switch
-  pinMode(lightPin,INPUT);
 
   // 12-way Mode Switch
   pinMode(Mode1Pin,INPUT);  
@@ -494,10 +500,14 @@ void setup()
   delay(5000);
   
   lcd.clear();
+  wdt_enable(WDTO_8S);
   
 }
 
 void loop(){
+
+// Main WatchdogTimer reset
+wdt_reset(); 
   
 // getting the Modbus readout
 if (MBserial.available()) {
@@ -534,61 +544,73 @@ ledcounter++;
  if (mode==1 and loopcounter>=70000){
   Mode1();
   loopcounter=0;
+  wdt_reset();
   }
 
  if (mode==2 and loopcounter>=70000){
   Mode2();
   loopcounter=0;
+  wdt_reset();
  }
  
- if (mode==3 and loopcounter>=900000){
+ if (mode==3 and loopcounter>=70000){
   Mode3();
   loopcounter=0;
+  wdt_reset();
   }
   
  if (mode==4 and loopcounter>=70000){
   Mode4();
   loopcounter=0;
+  wdt_reset();
   }
 
  if (mode==5 and loopcounter>=100000){
   Mode5();
   loopcounter=0;
+  wdt_reset();
  }
 
  if (mode==6 and loopcounter>=100000){
   Mode6();
   loopcounter=0;
+  wdt_reset();
  }
 
   if (mode==7 and loopcounter>=100000){
   Mode7();
   loopcounter=0;
+  wdt_reset();
   }
   
  if (mode==8 and loopcounter>=100000){
   Mode8();
   loopcounter=0;
+  wdt_reset();
   }
 
  if (mode==9 and loopcounter>=5000){
   Mode9();
   loopcounter=0;
+  wdt_reset();
  }
 
  if (mode==10 and loopcounter>=5000){
   Mode10();
   loopcounter=0;
+  wdt_reset();
  }
 
  if (mode==11 and loopcounter>=5000){
   Mode11();
   loopcounter=0;
+  wdt_reset();
  }
  
  if (mode==12 and loopcounter>=5000){
   Mode12();
   loopcounter=0;
+  wdt_reset();
  }
 
  if (ledcounter>=45000) {
@@ -615,6 +637,12 @@ innercounter++;
   Currentaquisition();
   innercounter=0;
  }
+
+if (Dreset==1 and dt.hour==Dresethr and dt.minute==Dresetmin){
+  if (dt.second>=0 and dt.second<=5){
+      resetFunc(); 
+  }                                    // resets system according setup
+}
 
 
 }
@@ -723,9 +751,9 @@ if (switchpress==1) {
     lcd.print("C1:OFF C2:OFF ");
   }   
 
- getVoltage();   // Sub to return Voltage
+ getVoltage();
  
- getSOC();       // Sub to return Battery SOC
+ getSOC();
 
   
     lcd.setCursor(0,2);
@@ -813,8 +841,7 @@ else {
   }
 
 
-// Temp and Hum
- 
+
   lcd.setCursor(0,2);
   lcd.print("Temp:");
   lcd.print(tempC);
@@ -822,7 +849,7 @@ else {
   lcd.print("RH:");
   lcd.print(humidity); 
  
- // battery type and inversed
+
   lcd.setCursor(0,3);  
   if (typeofbatt==0) { 
     lcd.print("LIPO     "); 
@@ -854,7 +881,7 @@ else {
 }
 
 
-// Batt discharge
+
    invertertime=(dt.hour);
    if (battSOC>minimumSOC+10){
     inverteravailable=1; 
@@ -1015,9 +1042,9 @@ if (switchpress==1) {
     lcd.print("C1:OFF C2:OFF ");
   }   
 
- getVoltage();   // Sub to return Voltage
+ getVoltage(); 
 
- getSOC();       // Sub to return Battery SOC
+ getSOC();   
 
   
     lcd.setCursor(0,2);
@@ -1104,7 +1131,6 @@ else {
   }
 
 
-// Temp and Hum
 
   lcd.setCursor(0,2);
   lcd.print("Temp:");
@@ -1114,7 +1140,7 @@ else {
   lcd.print(humidity); 
 
 
-// battery type and inversed
+
   lcd.setCursor(0,3);  
   if (typeofbatt==0) { 
     lcd.print("LIPO     "); 
@@ -1143,7 +1169,7 @@ else {
 
 }
   
- // Batt discharge
+
    invertertime=(dt.hour);
    if (battSOC>minimumSOC+10){
     inverteravailable=1; 
@@ -1204,225 +1230,6 @@ else {
 
 }
 
-/*
-void Mode3(){
-
-  // Light Mode (Mode3), Relays are ON when "L0W"
-
-  powercounter++;
-  
-  lcd.setCursor(0,0);
-  lcd.print("Mode 3: Altn (Light)");
-
-  if (powercounter>=relaycycletime) {
-      
-  lux=digitalRead(lightPin);
-  
-  if (lux==0){
-    lcd.setCursor(0,1);
-    lcd.print("Sunny  ");
-    lcd.setCursor(7,1);
-    lcd.print("C1:ON C2:ON  ");
-    digitalWrite(relayPin1,LOW);
-    chargerone=1;
-     if (typeofbatt==1 and battSOC<=88) {
-     digitalWrite(relayPin2,LOW);
-     chargertwo=1;
-     }
-     else {
-     digitalWrite(relayPin2,HIGH);
-     chargertwo=0;
-     }
-  }
-  if (lux==1 and dt.hour>=8 and dt.hour<=17){
-    lcd.setCursor(0,1);
-    lcd.print("Cloudy ");
-    lcd.setCursor(7,1);
-    lcd.print("C1:ON C2:OFF ");
-    digitalWrite(relayPin1,LOW);
-    chargerone=1;
-    digitalWrite(relayPin2,HIGH);
-    chargertwo=0;
-  }
-
-  if (lux==1 and dt.hour>17){
-    lcd.setCursor(0,1);
-    lcd.print("Night  ");
-    lcd.setCursor(7,1);
-    lcd.print("C1:OFF C2:OFF");
-    digitalWrite(relayPin1,HIGH);
-    digitalWrite(relayPin2,HIGH);
-    chargerone=0;
-    chargertwo=0;
-  }
-
-  if (lux==1 and dt.hour<8){
-    lcd.setCursor(0,1);
-    lcd.print("Night ");
-    lcd.setCursor(7,1);
-    lcd.print("C1:OFF C2:OFF");
-    digitalWrite(relayPin1,HIGH);
-    digitalWrite(relayPin2,HIGH);
-    chargerone=0;
-    chargertwo=0;
-  }
-
-  powercounter=0;
-  SOCfreeze=1;
-  }
-
-  if (powercounter==45) {
-    SOCfreeze=0;
-  }
-
-     if (chargerone==0 and chargertwo==0 and inverter==0){
-         if (oldidlestatus==1){
-         idlestatus=1;
-         }
-         else {
-         oldidlestatus=1;
-         }
-     }
-     else {
-     oldidlestatus=0; 
-     idlestatus=0;    
-     }
-   
-
- voltread=ads.readADC_SingleEnded(0);  
- // voltread=analogRead(voltPin);
- holdvolt=(voltread*(calibrationvalue+fineadjustment));   //calibrate your readout with a volt meter!
- averagevolt=averagevolt+holdvolt;           //smoothing out voltage readings
- if (voltcounter>=5) {
-   battvoltage=averagevolt/5;
-   averagevolt=0;
-   voltcounter=0;  
- }
- voltcounter++;
- 
- getSOC();       // Sub to return Battery SOC
-
-  
-    lcd.setCursor(0,2);
-    lcd.print("BatV:");
-    lcd.setCursor(8,2);
-    lcd.print("     ");
-    lcd.setCursor(5,2);
-    lcd.print(battvoltage);
-    lcd.setCursor(12,2);
-    lcd.print("SOC:");
-    lcd.setCursor(17,2);
-    lcd.print("  ");
-    lcd.setCursor(16,2);
-    lcd.print(battSOC);
-    lcd.setCursor(19,2);
-    lcd.print("%");
-
-  // date
-  dt=clock.getDateTime();
-  lcd.setCursor(9,3);
-  lcd.print("     ");
-  lcd.setCursor(0,3);
-  if (dt.day<10) { 
-    lcd.print("0");
-    }
-  lcd.print(dt.day);
-  lcd.print(".");
-  if (dt.month<10) { 
-    lcd.print("0");
-    }
-  lcd.print(dt.month);
-  lcd.print(".");
-  lcd.print(dt.year);
- // time
-  lcd.setCursor(12,3);
-  if (dt.hour<10) { 
-    lcd.print("0");
-    }
-  lcd.print(dt.hour);
-  lcd.print(":");
-  if (dt.minute<10) { 
-    lcd.print("0");
-    }
-  lcd.print(dt.minute);
-  lcd.print(":");
-  if (dt.second<10) {
-    lcd.print("0"); 
-    }
-  lcd.print(dt.second);
-
- 
- // Batt discharge
-   invertertime=(dt.hour);
-   if (battSOC>minimumSOC+10){
-    inverteravailable=1; 
-   }
-
-   if (battSOC<=minimumSOC){
-    digitalWrite(relayPin5,HIGH);
-    digitalWrite(relayPin3,HIGH);
-    inverter=0;
-    stopdelay=0;
-    inverteravailable=0;
-   }
-  
-  if (inverteravailable==1){  
-  if (NormInvOff<NormInvOn) {   
-  if (invertertime>=NormInvOn or invertertime<NormInvOff) {              
-     if (battSOC>minimumSOC) {
-         if (stopdelay==0){    
-            digitalWrite(relayPin5,LOW);
-            delay(prechargedelay);
-            stopdelay=1;
-         }
-        digitalWrite(relayPin3,LOW);
-        inverter=1;
-     }
-  }
- else {
-  digitalWrite(relayPin5,HIGH);
-  digitalWrite(relayPin3,HIGH);
-  inverter=0;
-  stopdelay=0;
-  }
- }
-
- if (NormInvOff>NormInvOn) {   
-  if (invertertime>=NormInvOn and invertertime<NormInvOff) {              
-     if (battSOC>minimumSOC) {
-      if (stopdelay==0){    
-            digitalWrite(relayPin5,LOW);
-            delay(prechargedelay);
-            stopdelay=1;
-         }
-      digitalWrite(relayPin3,LOW);
-      inverter=1;
-     }
-  }
- else {
-  digitalWrite(relayPin5,HIGH);
-  digitalWrite(relayPin3,HIGH);
-  inverter=0;
-  stopdelay=0;
-  }
- }
- 
- } 
- 
- if (tempC>=fanActtemp or fancounter>0) {
-  digitalWrite(relayPin4,LOW);
-  fancounter=fancounter--;
-  }
-  else {
-  digitalWrite(relayPin4,HIGH);
- }
-
-if (tempC>=fanActtemp){
-  fancounter=100;
-}
-
-}
-*/
 
 void Mode3(){
 
@@ -1437,7 +1244,7 @@ void Mode3(){
   actInvTimer=0;
  
 
-// check hour of day
+
    invertertime=(dt.hour);
     if (battSOC>minimumSOC+10){
        inverteravailable=1; 
@@ -1733,9 +1540,9 @@ if (T2C2Off>T2C2On) {
      }
     
 
-  getVoltage();   // Sub to return Voltage
+  getVoltage(); 
  
-  getSOC();       // Sub to return Battery SOC
+  getSOC(); 
 
   
     lcd.setCursor(0,2);
@@ -1858,7 +1665,7 @@ void Mode4(){
     averagepowerpool=averagepower/powercounter;
     powercounter++;
 
-    // check hour of day
+  
    invertertime=(dt.hour);
     if (battSOC>minimumSOC+10){
        inverteravailable=1; 
@@ -1978,7 +1785,7 @@ if (T1C2Off>T1C2On) {
 
 
 if (timermatch==0 and timer2match==0 and timer3match==0){
-    // charger activation cycle
+  
    
    if (chargerone==1 and chargertwo==0) {
     realpower=averagepowerpool+(battvoltage*ConeAmps);
@@ -1994,7 +1801,7 @@ if (timermatch==0 and timer2match==0 and timer3match==0){
     }
     
 
-// upper limit for charging
+
 if (battSOC>=maximumSOC) {
   realpower=0;
   }
@@ -2115,9 +1922,9 @@ if (powercounter==45) {
 
       
 
- getVoltage();   // Sub to return Voltage
+ getVoltage(); 
  
- getSOC();       // Sub to return Battery SOC
+ getSOC();    
 
   
     lcd.setCursor(0,2);
@@ -2135,7 +1942,7 @@ if (powercounter==45) {
     lcd.setCursor(19,2);
     lcd.print("%");
 
-// date
+
   lcd.setCursor(9,3);
   lcd.print("   ");
   lcd.setCursor(0,3);
@@ -2150,7 +1957,7 @@ if (powercounter==45) {
   lcd.print(dt.month);
   lcd.print(".");
   lcd.print(dt.year);
-  // time
+ 
   lcd.setCursor(12,3);
   if (dt.hour<10) { 
     lcd.print("0");
@@ -2194,7 +2001,6 @@ if (powercounter==45) {
   }
 
 
-// Temp and Hum
 
   lcd.setCursor(0,2);
   lcd.print("Temp:");
@@ -2204,7 +2010,7 @@ if (powercounter==45) {
   lcd.print(humidity); 
 
 
-// battery type and inversed
+
   lcd.setCursor(0,3);  
   if (typeofbatt==0) { 
     lcd.print("LIPO     "); 
@@ -2233,7 +2039,6 @@ if (powercounter==45) {
  }
 
     
-// Batt discharge
 
 
   if (timermatch==0 and timer2match==0 and timer3match==0){
@@ -2330,9 +2135,9 @@ void Mode5(){
   }
     
 
- getVoltage();   // Sub to return Voltage
+ getVoltage();  
 
- getSOC();       // Sub to return Battery SOC
+ getSOC();    
 
   
     lcd.setCursor(0,2);
@@ -2350,7 +2155,7 @@ void Mode5(){
     lcd.setCursor(19,2);
     lcd.print("%");
 
-  // date
+  
   dt = clock.getDateTime();
   lcd.setCursor(9,3);
   lcd.print("   ");
@@ -2366,7 +2171,7 @@ void Mode5(){
   lcd.print(dt.month);
   lcd.print(".");
   lcd.print(dt.year);
-  // time
+  
   lcd.setCursor(12,3);
   if (dt.hour<10) { 
     lcd.print("0");
@@ -2417,9 +2222,9 @@ void Mode6(){
     stopdelay=0;
   }
 
- getVoltage();   // Sub to return Voltage
+ getVoltage(); 
 
- getSOC();       // Sub to return Battery SOC
+ getSOC();    
 
   
     lcd.setCursor(0,2);
@@ -2437,7 +2242,7 @@ void Mode6(){
     lcd.setCursor(19,2);
     lcd.print("%");
 
- // date
+ 
   dt = clock.getDateTime();
   lcd.setCursor(9,3);
   lcd.print("   ");
@@ -2453,7 +2258,7 @@ void Mode6(){
   lcd.print(dt.month);
   lcd.print(".");
   lcd.print(dt.year);
-  // time
+ 
   lcd.setCursor(12,3);
   if (dt.hour<10) { 
     lcd.print("0");
@@ -2510,9 +2315,9 @@ void Mode7(){
     stopdelay=0;
   }
 
- getVoltage();   // Sub to return Voltage
+ getVoltage(); 
  
- getSOC();       // Sub to return Battery SOC
+ getSOC();  
 
   
     lcd.setCursor(0,2);
@@ -2620,9 +2425,9 @@ void Mode8(){
     chargertwo=0;
     }
 
- getVoltage();   // Sub to return Voltage
+ getVoltage();  
  
- getSOC();       // Sub to return Battery SOC
+ getSOC();   
 
   
     lcd.setCursor(0,2);
@@ -2640,7 +2445,7 @@ void Mode8(){
     lcd.setCursor(19,2);
     lcd.print("%");
 
- // date
+ 
   dt = clock.getDateTime();
   lcd.setCursor(9,3);
   lcd.print("   ");
@@ -2656,7 +2461,7 @@ void Mode8(){
   lcd.print(dt.month);
   lcd.print(".");
   lcd.print(dt.year);
-  // time
+ 
   lcd.setCursor(12,3);
   if (dt.hour<10) { 
     lcd.print("0");
@@ -2887,10 +2692,45 @@ if (setpos<=7) {
   lcd.print("h");
   }
    lcd.setCursor(0,2);
-  lcd.print("                    ");
-  
-   lcd.setCursor(0,3);
-  lcd.print("                    ");
+  lcd.print("Daily reset:        ");
+  lcd.setCursor(14,2);
+  if (setDreset==0){
+   lcd.print("NO "); 
+  }
+  else{
+   lcd.print("YES"); 
+  }
+  lcd.setCursor(19,2);
+  if (setpos==16){
+  lcd.print("<");  
+  }
+  else {
+  lcd.print("");
+  }
+  lcd.setCursor(0,3);
+  lcd.print("At: ");
+  lcd.setCursor(4,3);
+  lcd.print("    ");
+  lcd.setCursor(4,3);
+  lcd.print(setDresethr);
+  lcd.setCursor(6,3);
+  if (setpos==17){
+  lcd.print("<");  
+  }
+  else {
+  lcd.print("h");
+  }
+  lcd.setCursor(7,3);
+  lcd.print("             ");
+  lcd.setCursor(8,3);
+  lcd.print(setDresetmin);
+  lcd.setCursor(10,3);
+  if (setpos==18){
+  lcd.print("<  ");  
+  }
+  else {
+  lcd.print("min");
+  }
   
   }
 
@@ -2909,14 +2749,12 @@ if (setpos==2){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
+  
      if (digitalRead(DT) != currentStateCLK) { 
        counter ++;
        } 
        else {
-       // Encoder is rotating clockwise
-       counter ++;
+        counter ++;
        }
      if (counter>23) { counter=0;
      }
@@ -2928,13 +2766,10 @@ if (setpos==3){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
      if (digitalRead(DT) != currentStateCLK) { 
        counter ++;
        } 
        else {
-       // Encoder is rotating clockwise
        counter ++;
        }
      if (counter>23) { counter=0;
@@ -2947,13 +2782,11 @@ if (setpos==3){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
+
      if (digitalRead(DT) != currentStateCLK) { 
        counter ++;
        } 
        else {
-       // Encoder is rotating clockwise
        counter ++;
        }
      
@@ -2967,14 +2800,12 @@ if (setpos==3){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
+ 
      if (digitalRead(DT) != currentStateCLK) { 
        counter ++;
        } 
        else {
-       // Encoder is rotating clockwise
-       counter++;
+        counter++;
        }
      
      if (counter>23) { counter=0;
@@ -2987,14 +2818,12 @@ if (setpos==3){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
+
      if (digitalRead(DT) != currentStateCLK) { 
        counter ++;
        } 
        else {
-       // Encoder is rotating clockwise
-       counter++;
+        counter++;
        }
      
      if (counter>23) { counter=0;
@@ -3007,14 +2836,12 @@ if (setpos==3){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
+
      if (digitalRead(DT) != currentStateCLK) { 
        counter ++;
        } 
        else {
-       // Encoder is rotating clockwise
-       counter++;
+        counter++;
        }
      
      if (counter>23) { counter=0;
@@ -3027,13 +2854,11 @@ if (setpos==3){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
+ 
      if (digitalRead(DT) != currentStateCLK) { 
        counter ++;
        } 
        else {
-       // Encoder is rotating clockwise
        counter ++;
        }
      if (counter>23) { counter=0;
@@ -3046,14 +2871,12 @@ if (setpos==9){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
+ 
      if (digitalRead(DT) != currentStateCLK) { 
        counter ++;
        } 
        else {
-       // Encoder is rotating clockwise
-       counter ++;
+        counter ++;
        }
      if (counter>23) { counter=0;
      }
@@ -3065,14 +2888,12 @@ if (setpos==9){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
+ 
      if (digitalRead(DT) != currentStateCLK) { 
        counter ++;
        } 
        else {
-       // Encoder is rotating clockwise
-       counter ++;
+        counter ++;
        }
      
      if (counter>23) { counter=0;
@@ -3085,13 +2906,11 @@ if (setpos==9){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
+ 
      if (digitalRead(DT) != currentStateCLK) { 
        counter ++;
        } 
        else {
-       // Encoder is rotating clockwise
        counter++;
        }
      
@@ -3105,14 +2924,12 @@ if (setpos==9){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
+ 
      if (digitalRead(DT) != currentStateCLK) { 
        counter ++;
        } 
        else {
-       // Encoder is rotating clockwise
-       counter++;
+        counter++;
        }
      
      if (counter>23) { counter=0;
@@ -3125,13 +2942,11 @@ if (setpos==9){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
+ 
      if (digitalRead(DT) != currentStateCLK) { 
        counter ++;
        } 
        else {
-       // Encoder is rotating clockwise
        counter++;
        }
      
@@ -3145,13 +2960,11 @@ if (setpos==9){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
+ 
      if (digitalRead(DT) != currentStateCLK) { 
        counter ++;
        } 
        else {
-       // Encoder is rotating clockwise
        counter++;
        }
      
@@ -3165,13 +2978,11 @@ if (setpos==9){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
+ 
      if (digitalRead(DT) != currentStateCLK) { 
        counter ++;
        } 
        else {
-       // Encoder is rotating clockwise
        counter++;
        }
      
@@ -3179,8 +2990,63 @@ if (setpos==9){
      }
      setNormInvOff=counter;
    } }
-   
-  if (setpos==16){
+
+       if (setpos==16){
+ // set daily reset
+   currentStateCLK = digitalRead(CLK);
+      if (currentStateCLK != previousStateCLK){ 
+       
+ 
+     if (digitalRead(DT) != currentStateCLK) { 
+       counter ++;
+       } 
+       else {
+       counter++;
+       }
+     
+     if (counter>1) { counter=0;
+     }
+     setDreset=counter;
+   } }
+ 
+       if (setpos==17){
+ // set daily reset hr
+   currentStateCLK = digitalRead(CLK);
+      if (currentStateCLK != previousStateCLK){ 
+       
+ 
+     if (digitalRead(DT) != currentStateCLK) { 
+       counter ++;
+       } 
+       else {
+       counter++;
+       }
+     
+     if (counter>23) { counter=0;
+     }
+     setDresethr=counter;
+   } }
+
+     if (setpos==18){
+ // set daily reset min
+   currentStateCLK = digitalRead(CLK);
+      if (currentStateCLK != previousStateCLK){ 
+       
+ 
+     if (digitalRead(DT) != currentStateCLK) { 
+       counter ++;
+       } 
+       else {
+       counter++;
+       }
+     
+     if (counter>59) { counter=0;
+     }
+     setDresetmin=counter;
+   } }
+
+ 
+  if (setpos==19){
    // finish
    lcd.clear();
    lcd.setCursor(0,0);
@@ -3203,6 +3069,9 @@ if (setpos==9){
    T2InvOff=setT2InvOff;
    NormInvOn=setNormInvOn;
    NormInvOff=setNormInvOff;
+   Dreset=setDreset;
+   Dresethr=setDresethr;
+   Dresetmin=setDresetmin;
    //write limits to EEPROM
    EEPROM.write(7,T1C1On);
    EEPROM.write(8,T1C2On);
@@ -3218,11 +3087,14 @@ if (setpos==9){
    EEPROM.write(18,T2InvOff);
    EEPROM.write(24,NormInvOn);
    EEPROM.write(25,NormInvOff);
+   EEPROM.write(26,Dreset);
+   EEPROM.write(27,Dresethr);
+   EEPROM.write(28,Dresetmin);
    
-   delay(5000);
+   delay(4000);
    setpos=0;
    }
- // Update previousStateCLK with the current state
+
    previousStateCLK = currentStateCLK;  
 
 }
@@ -3335,13 +3207,11 @@ if (setpos==1){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
+
      if (digitalRead(DT) != currentStateCLK) { 
        counter ++;
        } 
        else {
-       // Encoder is rotating clockwise
        counter ++;
        }
      if (counter>49) { counter=0;
@@ -3354,14 +3224,11 @@ if (setpos==2){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
      if (digitalRead(DT) != currentStateCLK) { 
        counter ++;
        } 
        else {
-       // Encoder is rotating clockwise
-       counter ++;
+        counter ++;
        }
      if (counter<50 or counter>100) { counter=50;
      }
@@ -3373,13 +3240,10 @@ if (setpos==2){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
      if (digitalRead(DT) != currentStateCLK) { 
        counter ++;
        } 
        else {
-       // Encoder is rotating clockwise
        counter ++;
        }
      
@@ -3393,13 +3257,10 @@ if (setpos==2){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
      if (digitalRead(DT) != currentStateCLK) { 
        counter=counter+10;
        } 
        else {
-       // Encoder is rotating clockwise
        counter=counter+10;
        }
      
@@ -3413,8 +3274,6 @@ if (setpos==2){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
      if (digitalRead(DT) != currentStateCLK) { 
        counter=counter+10;
        } 
@@ -3433,13 +3292,10 @@ if (setpos==2){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
-     if (digitalRead(DT) != currentStateCLK) { 
+      if (digitalRead(DT) != currentStateCLK) { 
        counter=counter+1;
        } 
        else {
-       // Encoder is rotating clockwise
        counter=counter+1;
        }
      
@@ -3471,13 +3327,12 @@ if (setpos==2){
    EEPROM.write(20,triggerpowermode2);
    EEPROM.write(23,fineadjustmentbyte);
    
-   delay(5000);
+   delay(4000);
 
    fineadjustment=(fineadjustmentbyte-20)/500000;
    
    setpos=0;
    }
- // Update previousStateCLK with the current state
    previousStateCLK = currentStateCLK;  
 }
 
@@ -3595,13 +3450,10 @@ if (setpos==1){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
      if (digitalRead(DT) != currentStateCLK) { 
        counter ++;
        } 
        else {
-       // Encoder is rotating clockwise
        counter ++;
        }
      if (counter>45) { counter=0;
@@ -3614,13 +3466,10 @@ if (setpos==2){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
      if (digitalRead(DT) != currentStateCLK) { 
        counter ++;
        } 
        else {
-       // Encoder is rotating clockwise
        counter ++;
        }
      if (counter>45) { counter=0;
@@ -3633,13 +3482,10 @@ if (setpos==2){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
      if (digitalRead(DT) != currentStateCLK) { 
        counter ++;
        } 
        else {
-       // Encoder is rotating clockwise
        counter ++;
        }
      
@@ -3653,13 +3499,10 @@ if (setpos==2){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
      if (digitalRead(DT) != currentStateCLK) { 
        counter ++;
        } 
        else {
-       // Encoder is rotating clockwise
        counter ++;
        }
      
@@ -3674,13 +3517,10 @@ if (setpos==2){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
      if (digitalRead(DT) != currentStateCLK) { 
        counter ++;
        } 
        else {
-       // Encoder is rotating clockwise
        counter ++;
        }
      
@@ -3712,10 +3552,9 @@ if (setpos==2){
    EEPROM.write(22,invertreadout);
    
    
-   delay(5000);
+   delay(4000);
    setpos=0;
    }
- // Update previousStateCLK with the current state
    previousStateCLK = currentStateCLK;  
 
 }
@@ -3805,14 +3644,11 @@ if (setpos==1){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
-     if (digitalRead(DT) != currentStateCLK) { 
+      if (digitalRead(DT) != currentStateCLK) { 
        counter ++;
        } 
        else {
-       // Encoder is rotating clockwise
-       counter ++;
+        counter ++;
        }
      if (counter>31) { counter=1;
      }
@@ -3824,13 +3660,10 @@ if (setpos==2){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
      if (digitalRead(DT) != currentStateCLK) { 
        counter ++;
        } 
        else {
-       // Encoder is rotating clockwise
        counter ++;
        }
      if (counter>12) { counter=1;
@@ -3843,13 +3676,10 @@ if (setpos==2){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
      if (digitalRead(DT) != currentStateCLK) { 
        counter ++;
        } 
        else {
-       // Encoder is rotating clockwise
        counter ++;
        }
      
@@ -3863,13 +3693,10 @@ if (setpos==2){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
      if (digitalRead(DT) != currentStateCLK) { 
        counter ++;
        } 
        else {
-       // Encoder is rotating clockwise
        counter ++;
        }
      if (counter>23) { counter=0;
@@ -3882,13 +3709,10 @@ if (setpos==2){
    currentStateCLK = digitalRead(CLK);
       if (currentStateCLK != previousStateCLK){ 
        
-     // If the inputDT state is different than the inputCLK state then 
-     // the encoder is rotating counterclockwise
      if (digitalRead(DT) != currentStateCLK) { 
        counter ++;
        } 
        else {
-       // Encoder is rotating clockwise
        counter ++;
        }
      if (counter>59) { counter=0;
@@ -3903,12 +3727,9 @@ if (setpos==2){
    lcd.print("Mode 12: Set Time   ");
    lcd.setCursor(7,2);
    lcd.print("DONE");
-   // The following lines set the date and time
-   // rtc.setDOW(MONDAY);     // Set Day-of-Week
   clock.setDateTime(setyear,setmonth,setday,sethour,setminute, 0);     // Set the time to  (24hr format)
-  // rtc.setDate(setday,setmonth,setyear);   // Set the date 
-   
-   delay(5000);
+    
+   delay(4000);
    setpos=0;
    }
  // Update previousStateCLK with the current state
@@ -3923,22 +3744,13 @@ void LEDsignals () {
   invertercounter++;
   greencounter++;
   
-  if (mode<=8 and autoaltnmode==0) {
+  if (mode<=8) {
   digitalWrite(greenpin,HIGH);               // system showing ON only when in a running mode
   }
   else {
   digitalWrite(greenpin,LOW);
   }
 
-  if (autoaltnmode==1) {     //1 sec blink when automatic swich to alternate mode
-   if (greencounter==1) {
-   digitalWrite(greenpin,HIGH); 
-   }
-   else {
-   digitalWrite(greenpin,LOW);
-   greencounter=0; 
-   }
-  }
   
   
   if (chargerone==1 and chargertwo==1) {
@@ -4040,6 +3852,8 @@ if (ACPWdata){
   ACPWdata.print(inverterlog);
   ACPWdata.print(",");
   ACPWdata.print(tempC);
+  ACPWdata.print(",");
+  ACPWdata.print(millis());
   ACPWdata.println("");
   ACPWdata.close();
 }
@@ -4137,66 +3951,66 @@ if (typeofbatt==1){
   }
   
   if (battvoltage>=54.70 and battvoltage<54.9){
-  if (chargerone==1) {         //correcting by charger voltage 
+  if (chargerone==1) {         
   SOCvoltage=SOCvoltage-(ConeAmps*0.048);
   corrindchg=6;
   }
-  if (chargertwo==1) {         //correcting by charger voltage
+  if (chargertwo==1) {         
   SOCvoltage=SOCvoltage-(CtwoAmps*0.048);
   corrindchg=6;
   }
   }
 
    if (battvoltage>=54.4 and battvoltage<54.70){
-  if (chargerone==1) {         //correcting by charger voltage 
+  if (chargerone==1) {        
   SOCvoltage=SOCvoltage-(ConeAmps*0.039);
   corrindchg=5;
   }
-  if (chargertwo==1) {         //correcting by charger voltage
+  if (chargertwo==1) {       
   SOCvoltage=SOCvoltage-(CtwoAmps*0.039);
   corrindchg=5;
   }
   }
   
   if (battvoltage>=54.05 and battvoltage<54.4){
-  if (chargerone==1) {         //correcting by charger voltage 
+  if (chargerone==1) {       
   SOCvoltage=SOCvoltage-(ConeAmps*0.030);
   corrindchg=4;
   }
-  if (chargertwo==1) {         //correcting by charger voltage
+  if (chargertwo==1) {      
   SOCvoltage=SOCvoltage-(CtwoAmps*0.030);
   corrindchg=4;
   }
   }
 
   if (battvoltage>=53.6 and battvoltage<54.05){
-  if (chargerone==1) {         //correcting by charger voltage 
+  if (chargerone==1) {     
   SOCvoltage=SOCvoltage-(ConeAmps*0.024);
   corrindchg=3;
   }
-  if (chargertwo==1) {         //correcting by charger voltage
+  if (chargertwo==1) {     
   SOCvoltage=SOCvoltage-(CtwoAmps*0.024);
   corrindchg=3;
   }
   }
   
   if (battvoltage>=53.1 and battvoltage<53.6){
-  if (chargerone==1) {         //correcting by charger voltage 
+  if (chargerone==1) {    
   SOCvoltage=SOCvoltage-(ConeAmps*0.021);
   corrindchg=2;
   }
-  if (chargertwo==1) {         //correcting by charger voltage
+  if (chargertwo==1) {     
   SOCvoltage=SOCvoltage-(CtwoAmps*0.021);
   corrindchg=2;
   }
   }
   
   if (battvoltage<53.1) {
-  if (chargerone==1) {         //correcting by charger voltage 
+  if (chargerone==1) {      
   SOCvoltage=SOCvoltage-(ConeAmps*0.017);
   corrindchg=1;
   }
-  if (chargertwo==1) {         //correcting by charger voltage
+  if (chargertwo==1) {     
   SOCvoltage=SOCvoltage-(CtwoAmps*0.017);
   corrindchg=1;
   }
@@ -4204,11 +4018,11 @@ if (typeofbatt==1){
   
 }
 else {
-  if (chargerone==1) {         //correcting by charger voltage 
+  if (chargerone==1) {      
   SOCvoltage=SOCvoltage-(ConeAmps*0.02);
   corrindchg=2;
   }
-  if (chargertwo==1) {         //correcting by charger voltage
+  if (chargertwo==1) {      
   SOCvoltage=SOCvoltage-(CtwoAmps*0.02);
   corrindchg=2;
   }
@@ -4592,6 +4406,12 @@ battSOC=0;
 }
 
 }
+
+
+void resetFunc(){
+asm volatile ("  jmp 0");
+}
+
 
 uint16_t calculateCRC(uint8_t *array, uint8_t num) {
   uint16_t temp, flag;
