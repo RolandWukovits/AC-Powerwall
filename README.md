@@ -1,4 +1,4 @@
-# AC-Powerwall *current software version 1.00.27/21.09.2020* Wifi not yet included!
+# AC-Powerwall *current software version 1.00.30/26.09.2020* Incl Wifi and Blynk
 
 This repository contains code and documentation files from my YouTube "The AC-Powerwall Project" on "Roland W" channel.
 Playlist: https://www.youtube.com/playlist?list=PLz3GU7wMX4_P-K7Ht42iucupu2CXGZh10
@@ -19,7 +19,7 @@ Items/Modules/Devices the controller is using are:
 - 3x Mosfet Module to switch 12V LED-Indicators
 - 3 12V LED-Indicators (red, yellow, green)
 - SD-Card Module
-- 5A AC-current sensor module to be connected on the inverter AC connection (you might have to use a 10A/20A one)
+- 20A AC-current sensor module to be connected on the inverter AC connection
 - ESP01 Module (ESP8266)
 - 12 way Rotary Switch as Mode selector
 - 13x 10k, 2x 1k, 1x 2k, 1x 830R 1/4W resistors
