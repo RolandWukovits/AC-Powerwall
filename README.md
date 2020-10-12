@@ -1,4 +1,4 @@
-# AC-Powerwall *current software version 1.00.30/26.09.2020* Incl Wifi and Blynk
+# AC-Powerwall *current software version 1.00.37/11.10.2020* Incl Wifi and Blynk
 
 This repository contains code and documentation files from my YouTube "The AC-Powerwall Project" on "Roland W" channel.
 Playlist: https://www.youtube.com/playlist?list=PLz3GU7wMX4_P-K7Ht42iucupu2CXGZh10
@@ -23,7 +23,7 @@ Items/Modules/Devices the controller is using are:
 - ESP01 Module (ESP8266)
 - 12 way Rotary Switch as Mode selector
 - 13x 10k, 2x 1k, 1x 2k, 1x 830R 1/4W resistors
-- divers male, female headers and sockets
+- diverse male, female headers and sockets
 
 The controller is switching:
 - 2 battery chargers (AC small vehicle chargers, use 2 different power outputs)
