@@ -21,6 +21,7 @@ Items/Modules/Devices the controller is using are:
 - SD-Card Module
 - 20A AC-current sensor module to be connected on the inverter AC connection
 - ESP01 Module (ESP8266)
+- AMS1117 3,3V Version Buck converter to power ESP01
 - 12 way Rotary Switch as Mode selector
 - 13x 10k, 2x 1k, 1x 2k, 1x 830R 1/4W resistors
 - diverse male, female headers and sockets
