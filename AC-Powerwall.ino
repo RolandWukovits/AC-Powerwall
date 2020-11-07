@@ -186,9 +186,9 @@ float humidity;
 float tempC;
 float fancounter;
 // Relays module
-#define relayPin1 36               // Charger 1
+#define relayPin1 34               // Charger 1
 #define relayPin2 35               // Charger 2
-#define relayPin3 34               // Inverter DC
+#define relayPin3 36               // Inverter DC
 #define relayPin4 37               // Fans
 #define relayPin5 38               // Inverter Capacitor Precharging
 #define relayPin6 39               // empty
