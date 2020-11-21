@@ -1,6 +1,6 @@
 
 // This is beta-software for my AC-powerwall controller
-// Version 1.00.55 (complete edition), 07.11.2020
+// Version 1.00.62 (complete edition), 20.11.2020
 // Author and system designer: Roland Wukovits
 // e-mail: acpw@thehillside.net
 // The code, or parts of it, can be used for private DIY projects only, as
@@ -44,9 +44,11 @@
 
 
 #define BLYNK_PRINT Serial
-char auth[] = "yourAuth";
-char ssid[] = "yourSSID";
-char pass[] = "yourPass";
+char auth[] = "hJtO4MBnvSj8LjQehI8Uphq_sDgelhUn";
+char ssid[] = "Tar2G";
+char pass[] = "0956498211";
+//char ssid[] = "THEHILLSIDENET_ROOM4";
+//char pass[] = "greatwings";
 
 WidgetLED led1(V15);
 
@@ -186,9 +188,9 @@ float humidity;
 float tempC;
 float fancounter;
 // Relays module
-#define relayPin1 34               // Charger 1
+#define relayPin1 36               // Charger 1
 #define relayPin2 35               // Charger 2
-#define relayPin3 36               // Inverter DC
+#define relayPin3 34               // Inverter DC
 #define relayPin4 37               // Fans
 #define relayPin5 38               // Inverter Capacitor Precharging
 #define relayPin6 39               // empty
@@ -335,6 +337,8 @@ byte longinvcorr;
 byte invcorract;
 uint32_t idlestartmillis;
 uint32_t idlediffmillis;
+uint32_t minimumstartmillis;
+byte minimumreach;
 byte idlestatus;
 byte idleactive;
 // ADS1115
@@ -497,7 +501,7 @@ void setup()
   lcd.setCursor(0,2);
   lcd.print("acpw@thehillside.net");
   lcd.setCursor(0,3);
-  lcd.print("V1.00.55/07.11.2020");
+  lcd.print("V1.00.62/20.11.2020");
   
   HT.begin();
 
@@ -764,6 +768,7 @@ ledcounter++;
     connectCounter++;
     startBlynk();
   }
+   
       
   BlynkDataTransmit();
   
@@ -811,7 +816,7 @@ void Mode1(){
     realpower=averagepowerpool;
     }
 
-if (battSOC>=99 or Maxlock==1 or battSOC>maximumSOC+2) {
+if (battSOC>=99 or Maxlock==1 or battSOC>maximumSOC) {
    digitalWrite(relayPin1,HIGH);
    digitalWrite(relayPin2,HIGH);
    chargerone=0;
@@ -820,7 +825,7 @@ if (battSOC>=99 or Maxlock==1 or battSOC>maximumSOC+2) {
    Maxlock=1;
 }
 
-  if (battSOC<=maximumSOC-10){
+  if (battSOC<=maximumSOC-8){
     Maxlock=0;
   }
     
@@ -871,6 +876,7 @@ else{
      digitalWrite(relayPin2,HIGH);
      chargerone=0;
      chargertwo=0;
+     chargerlock=1;
   
 }
 
@@ -1055,14 +1061,8 @@ else {
     inverteravailable=1; 
    }
 
-   if (battSOC<=minimumSOC){
-    digitalWrite(relayPin5,HIGH);
-    digitalWrite(relayPin3,HIGH);
-    inverter=0;
-    stopdelay=0;
-    inverteravailable=0;
-   }
-  
+Checkminimumreached();
+     
   if (inverteravailable==1){  
   if (NormInvOff<NormInvOn) {   
   if (invertertime>=NormInvOn or invertertime<NormInvOff) {              
@@ -1136,7 +1136,7 @@ void Mode2(){
     realpower=averagepowerpool;
     }
     
-if (battSOC>=99 or Maxlock==1 or battSOC>maximumSOC+2) {
+if (battSOC>=99 or Maxlock==1 or battSOC>maximumSOC) {
    digitalWrite(relayPin1,HIGH);
    digitalWrite(relayPin2,HIGH);
    chargerone=0;
@@ -1145,14 +1145,14 @@ if (battSOC>=99 or Maxlock==1 or battSOC>maximumSOC+2) {
    Maxlock=1;
 }
 
-  if (battSOC<=maximumSOC-10){
+  if (battSOC<=maximumSOC-8){
     Maxlock=0;
   }
 
 if (powercounter>=relaycycletime) {
 // upper limit for charging
 if (battSOC<=maximumSOC and Maxlock==0) {
-  
+ 
   if (typeofbatt==1 and corrindchg==8) {
   chargerlock=1;
   }
@@ -1196,6 +1196,7 @@ else{
      digitalWrite(relayPin2,HIGH);
      chargerone=0;
      chargertwo=0;
+     chargerlock=1;
  }
 
   Datalogging();
@@ -1376,14 +1377,8 @@ else {
     inverteravailable=1; 
    }
 
-   if (battSOC<=minimumSOC){
-    digitalWrite(relayPin5,HIGH);
-    digitalWrite(relayPin3,HIGH);
-    inverter=0;
-    stopdelay=0;
-    inverteravailable=0;
-   }
-  
+  Checkminimumreached();
+
   if (inverteravailable==1){  
   if (NormInvOff<NormInvOn) {   
   if (invertertime>=NormInvOn or invertertime<NormInvOff) {              
@@ -1455,14 +1450,8 @@ void Mode3(){
        inverteravailable=1; 
      }
 
-    if (battSOC<=minimumSOC){
-    digitalWrite(relayPin5,HIGH);
-    digitalWrite(relayPin3,HIGH);
-    inverter=0;
-    stopdelay=0;
-    inverteravailable=0;
-   }
-
+ Checkminimumreached();
+ 
 if (inverteravailable==1){
    
  if (T1InvOff<T1InvOn) {   
@@ -1694,8 +1683,12 @@ if (T2C2Off>T2C2On) {
     chargerlock=1;
     Maxlock=1;
   }
-  if (battSOC<=maximumSOC-10){
+  if (battSOC<=maximumSOC-8){
     Maxlock=0;
+  }
+
+  if (battSOC>maximumSOC){
+  chargerlock=1;
   }
   
   if (typeofbatt==1 and corrindchg==8) {
@@ -1892,13 +1885,7 @@ void Mode4(){
        inverteravailable=1; 
      }
 
-    if (battSOC<=minimumSOC){
-    digitalWrite(relayPin5,HIGH);
-    digitalWrite(relayPin3,HIGH);
-    inverter=0;
-    stopdelay=0;
-    inverteravailable=0;
-   }
+ Checkminimumreached();
 
 
 if (powercounter>=relaycycletime) {
@@ -2021,7 +2008,7 @@ if (timermatch==0 and timer2match==0 and timer3match==0){
     realpower=averagepowerpool;
     }
     
-if (battSOC>=99 or Maxlock==1 or battSOC>maximumSOC+2) {
+if (battSOC>=99 or Maxlock==1 or battSOC>maximumSOC) {
     digitalWrite(relayPin1,HIGH);
     digitalWrite(relayPin2,HIGH);
     chargerone=0;
@@ -2030,7 +2017,7 @@ if (battSOC>=99 or Maxlock==1 or battSOC>maximumSOC+2) {
     Maxlock=1;
 }
 
-if (battSOC<maximumSOC-10){
+if (battSOC<maximumSOC-8){
   Maxlock=0;
 }
 
@@ -2361,11 +2348,11 @@ void Mode5(){
    Maxlock=1;
  }
 
-  if (battSOC<=maximumSOC-5){
+  if (battSOC<=maximumSOC-6){
     Maxlock=0;
   }
     
-  if (battSOC<=99){                             // only this mode allows 100% charge
+  if (battSOC<99 and Maxlock==0){                             // only this mode allows 100% charge
     lcd.print("C1:ON C2:OFF Inv:OFF ");
     digitalWrite(relayPin1,LOW);
     digitalWrite(relayPin2,HIGH);
@@ -2453,7 +2440,7 @@ void Mode6(){
   lcd.print("Mode 6: Charger 2 ON");
     lcd.setCursor(0,1);
 
-if (battSOC>=99 or Maxlock==1 or battSOC>maximumSOC+2) {
+if (battSOC>=99 or Maxlock==1 or battSOC>maximumSOC) {
    digitalWrite(relayPin1,HIGH);
    digitalWrite(relayPin2,HIGH);
    chargerone=0;
@@ -2461,7 +2448,7 @@ if (battSOC>=99 or Maxlock==1 or battSOC>maximumSOC+2) {
    Maxlock=1;
 }
 
-  if (battSOC<=maximumSOC-10){
+  if (battSOC<=maximumSOC-8){
     Maxlock=0;
   }
     
@@ -2557,7 +2544,7 @@ if (typeofbatt==1 and corrindchg==8) {
   lcd.setCursor(0,0);
   lcd.print("Mode 7: Charger12 ON");
 
-if (battSOC>=99 or Maxlock==1 or battSOC>maximumSOC+2) {
+if (battSOC>=99 or Maxlock==1 or battSOC>maximumSOC) {
    digitalWrite(relayPin1,HIGH);
    digitalWrite(relayPin2,HIGH);
    chargerone=0;
@@ -2566,7 +2553,7 @@ if (battSOC>=99 or Maxlock==1 or battSOC>maximumSOC+2) {
    Maxlock=1;
 }
 
-  if (battSOC<=maximumSOC-10){
+  if (battSOC<=maximumSOC-8){
     Maxlock=0;
   }
   
@@ -2598,7 +2585,7 @@ if (battSOC>=99 or Maxlock==1 or battSOC>maximumSOC+2) {
     chargertwo=0;
     inverter=0;
     stopdelay=0;
-    Maxlock=1;
+    chargerlock=1;
   }
 
  getVoltage(); 
@@ -4509,6 +4496,31 @@ void getVoltage(){
   
 }
 
+void Checkminimumreached(){
+
+   if (battSOC<=minimumSOC){
+
+   if(minimumreach==0){
+    minimumstartmillis=millis();
+    minimumreach=1;
+   }
+   else{
+    if (millis()>(minimumstartmillis+60000)){
+       digitalWrite(relayPin5,HIGH);
+       digitalWrite(relayPin3,HIGH);
+       inverter=0;
+       stopdelay=0;
+       inverteravailable=0;
+    }
+   }
+    
+   }
+   else{
+   minimumreach=0; 
+   }
+   
+}   
+
 void InverterSOCcorrection(){
 
 if (inverter==1 and invcorract==1){
@@ -4532,7 +4544,7 @@ else{
 
 void Checkidlestatus(){
   
-    if (chargerone==0 and chargertwo==0 and inverter==0){
+    if (chargerone==0 and chargertwo==0){    // and inverter==0
          if (idleactive==0){
           idlestartmillis=millis();
           idleactive=1;
@@ -4540,10 +4552,10 @@ void Checkidlestatus(){
          }
          else {
           idlediffmillis=millis()-idlestartmillis;
-           if (idlediffmillis>200000){
+           if (idlediffmillis>180000){
             idlestatus=1;
            }
-           if (idlediffmillis>500000){
+           if (idlediffmillis>450000){
             idlestatus=2;
            }
            if (idlediffmillis>1100000){
@@ -4555,13 +4567,16 @@ void Checkidlestatus(){
            if (idlediffmillis>3600000){
             idlestatus=5;
            }
+           if (idlediffmillis>18000000){
+            idlestatus=6;
+           }
          }
      }
      else{
       idleactive=0;
       idlestatus=0;
      }
- 
+
 }
 
 void getSOC() {
@@ -4584,91 +4599,113 @@ if (typeofbatt==1){
   corrindchg=8;
   }
   if (chargerone==1 and chargertwo==1){
-   SOCvoltage=SOCvoltage+((ConeAmps+CtwoAmps) *0.053*0.21);  
+   SOCvoltage=SOCvoltage+((ConeAmps+CtwoAmps) *0.055*0.23);  
+   corrindchg=8;
   }
   }
   
   if (battvoltage>=54.74 and battvoltage<54.85){
   if (chargerone==1) {         
   SOCvoltage=SOCvoltage-(ConeAmps*0.042);
-  corrindchg=7;
+  corrindchg=8;
   }
   if (chargertwo==1) {         
   SOCvoltage=SOCvoltage-(CtwoAmps*0.043);
-  corrindchg=7;
+  corrindchg=8;
   }
   if (chargerone==1 and chargertwo==1){
-   SOCvoltage=SOCvoltage+((ConeAmps+CtwoAmps) *0.042*0.21);  
+   SOCvoltage=SOCvoltage+((ConeAmps+CtwoAmps) *0.043*0.23);
+   corrindchg=7;  
   }
   }
 
  if (battvoltage>=54.60 and battvoltage<54.74){
   if (chargerone==1) {        
   SOCvoltage=SOCvoltage-(ConeAmps*0.033);
-  corrindchg=6;
+  corrindchg=7;
   }
   if (chargertwo==1) {       
   SOCvoltage=SOCvoltage-(CtwoAmps*0.034);
-  corrindchg=6;
+  corrindchg=7;
   }
   if (chargerone==1 and chargertwo==1){
-   SOCvoltage=SOCvoltage+((ConeAmps+CtwoAmps) *0.034*0.21);  
+   SOCvoltage=SOCvoltage+((ConeAmps+CtwoAmps) *0.034*0.23);
+   corrindchg=6;  
   }
   }
   
    if (battvoltage>=54.40 and battvoltage<54.60){
   if (chargerone==1) {        
   SOCvoltage=SOCvoltage-(ConeAmps*0.029);
-  corrindchg=5;
+  corrindchg=6;
   }
   if (chargertwo==1) {       
   SOCvoltage=SOCvoltage-(CtwoAmps*0.030);
-  corrindchg=5;
+  corrindchg=6;
   }
   if (chargerone==1 and chargertwo==1){
-   SOCvoltage=SOCvoltage+((ConeAmps+CtwoAmps) *0.030*0.21);  
+   SOCvoltage=SOCvoltage+((ConeAmps+CtwoAmps) *0.030*0.22);
+    corrindchg=5;  
   }
   }
   
   if (battvoltage>=54.05 and battvoltage<54.40){
   if (chargerone==1) {       
   SOCvoltage=SOCvoltage-(ConeAmps*0.026);
-  corrindchg=4;
+  corrindchg=5;
   }
   if (chargertwo==1) {      
   SOCvoltage=SOCvoltage-(CtwoAmps*0.027);
-  corrindchg=4;
+  corrindchg=5;
   }
   if (chargerone==1 and chargertwo==1){
-   SOCvoltage=SOCvoltage+((ConeAmps+CtwoAmps) *0.027*0.20);  
+   SOCvoltage=SOCvoltage+((ConeAmps+CtwoAmps) *0.026*0.20);
+   corrindchg=4;  
   }
   }
 
-  if (battvoltage>=53.60 and battvoltage<54.05){
+  if (battvoltage>=53.80 and battvoltage<54.05){
   if (chargerone==1) {     
   SOCvoltage=SOCvoltage-(ConeAmps*0.022);
-  corrindchg=3;
+  corrindchg=4;
   }
   if (chargertwo==1) {     
   SOCvoltage=SOCvoltage-(CtwoAmps*0.023);
+  corrindchg=4;
+  }
+  if (chargerone==1 and chargertwo==1){
+   SOCvoltage=SOCvoltage+((ConeAmps+CtwoAmps) *0.022*0.18);
+    corrindchg=3;  
+  }
+  }
+
+  if (battvoltage>=53.50 and battvoltage<53.80){
+  if (chargerone==1) {    
+  SOCvoltage=SOCvoltage-(ConeAmps*0.020);
+  corrindchg=3;
+  }
+  if (chargertwo==1) {     
+  SOCvoltage=SOCvoltage-(CtwoAmps*0.020);
   corrindchg=3;
   }
   if (chargerone==1 and chargertwo==1){
-   SOCvoltage=SOCvoltage+((ConeAmps+CtwoAmps) *0.023*0.19);  
+   SOCvoltage=SOCvoltage+((ConeAmps+CtwoAmps) *0.020*0.18);
+    corrindchg=2;  
   }
   }
   
-  if (battvoltage>=53.10 and battvoltage<53.60){
+  if (battvoltage>=53.10 and battvoltage<53.50){
   if (chargerone==1) {    
   SOCvoltage=SOCvoltage-(ConeAmps*0.019);
   corrindchg=2;
   }
   if (chargertwo==1) {     
-  SOCvoltage=SOCvoltage-(CtwoAmps*0.020);
+  SOCvoltage=SOCvoltage-(CtwoAmps*0.019);
   corrindchg=2;
   }
   if (chargerone==1 and chargertwo==1){
-   SOCvoltage=SOCvoltage+((ConeAmps+CtwoAmps) *0.020*0.19);  
+   SOCvoltage=SOCvoltage+((ConeAmps+CtwoAmps) *0.019*0.18);
+    corrindchg=1;  
   }
   }
   
@@ -4706,6 +4743,17 @@ if (inverter==1) {         //correcting by inverter voltage by Current module
 
  if (typeofbatt==1){
   SOCvoltage=SOCvoltage+0.30;    // basic LFP corr for going into discharge
+
+  if (battvoltage>53 and inverterwatts<250){
+   SOCvoltage=SOCvoltage+0.06; 
+  }
+  if (battvoltage<52.0){
+   SOCvoltage=SOCvoltage+0.10; 
+  }
+  if (battvoltage<51.7){
+   SOCvoltage=SOCvoltage+0.05; 
+  }
+  
   if (longinvcorr==1){
     SOCvoltage=SOCvoltage+0.06; 
   }
@@ -4840,6 +4888,12 @@ if (typeofbatt==1) {                     // LIFEPO
 
 corrindrest=0;
 
+
+if (inverter==0){
+if (idleactive==1 and chargerlock==1) {
+   SOCvoltage=SOCvoltage+0.07;
+   }
+
 if (idlestatus==1) {                           // correcting voltage sag when batt idling for longer
   SOCvoltage=SOCvoltage+0.08;
   corrindrest=1;
@@ -4859,6 +4913,11 @@ if (idlestatus==4) {
 if (idlestatus==5) {                           
   SOCvoltage=SOCvoltage+0.26;
   corrindrest=5;
+}
+if (idlestatus==6) {                           
+  SOCvoltage=SOCvoltage+0.30;
+  corrindrest=6;
+}
 }
 
 if (longinvcorr==1){                          // correcting voltage sag when inverting for longer
@@ -5072,11 +5131,16 @@ battSOC=0;
 }  
 
 // corr for when high SOC when charging
-if (corrindchg==4 and battSOC<66){
-  battSOC=66;
+/*
+if (corrindchg==3 and battSOC<49){
+  battSOC=49;
 }
-if (corrindchg==5 and battSOC<80){
-  battSOC=80;
+*/
+if (corrindchg==4 and battSOC<65){
+  battSOC=65;
+}
+if (corrindchg==5 and battSOC<79){
+  battSOC=79;
 }
 if (corrindchg==6 and battSOC<84){
   battSOC=84;
