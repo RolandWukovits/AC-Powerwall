@@ -1,4 +1,4 @@
-# AC-Powerwall *current software version 1.00.55/07.11.2020* Incl Wifi and Blynk
+# AC-Powerwall *current software version 1.00.62/20.11.2020* Incl Wifi and Blynk
 
 This repository contains code and documentation files from my YouTube "The AC-Powerwall Project" on "Roland W" channel.
 Playlist: https://www.youtube.com/playlist?list=PLz3GU7wMX4_P-K7Ht42iucupu2CXGZh10
