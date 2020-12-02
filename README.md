@@ -1,4 +1,4 @@
-# AC-Powerwall *current software version 1.00.62/20.11.2020* Incl Wifi and Blynk
+# AC-Powerwall *current software version 1.01.04/02.12.2020* -= NEW! second Display (0,96inch OLED) added!
 
 This repository contains code and documentation files from my YouTube "The AC-Powerwall Project" on "Roland W" channel.
 Playlist: https://www.youtube.com/playlist?list=PLz3GU7wMX4_P-K7Ht42iucupu2CXGZh10
@@ -13,6 +13,7 @@ Items/Modules/Devices the controller is using are:
 - Max485 Modbus Module
 - DHT11 Temperature and Humidity sensor
 - 2004 LED Screen with Serial Board
+- 0,96 inch OLED Display
 - ADS1115 16-bit Analog to Digital Converter
 - 6-way Relay Module (5V, activate on LOW)
 - Rotary Encoder Switch
