@@ -12,8 +12,8 @@ Items/Modules/Devices the controller (Board Version 2.0 and up) is using are:
 - DS3231 Real Time Clock
 - Max485 Modbus Module
 - DHT11 Temperature and Humidity sensor
-- 2004 LED Screen with Serial Board
-- 0,96 inch OLED Display
+- 2004 LED Screen with I2C Serial Board
+- 0,96 inch OLED Display I2C
 - ADS1115 16-bit Analog to Digital Converter
 - 6-way Relay Module (5V, activate on LOW)
 - Rotary Encoder Switch
