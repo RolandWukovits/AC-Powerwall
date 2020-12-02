@@ -46,11 +46,9 @@
 #include <Adafruit_SSD1306.h>
 
 #define BLYNK_PRINT Serial
-char auth[] = "hJtO4MBnvSj8LjQehI8Uphq_sDgelhUn";
-//char ssid[] = "Tar2G";
-//char pass[] = "0956498211";
-char ssid[] = "THEHILLSIDENET_R4";
-char pass[] = "greatwings";
+char auth[] = "yourAuth";
+char ssid[] = "yourSSID";
+char pass[] = "yourPass";
 
 WidgetLED led1(V15);
 
