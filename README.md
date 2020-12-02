@@ -7,7 +7,7 @@ While it is appreciated to give an appropriate donation if you have used this co
 
 The project is still ongoing!!! Files are constantly changing while code is still developed. Please ask for details on progress!
 
-Items/Modules/Devices the controller is using are:
+Items/Modules/Devices the controller (Board Version 2.0 and up) is using are:
 - Arduino Mega or compatible 2560 board
 - DS3231 Real Time Clock
 - Max485 Modbus Module
@@ -17,14 +17,12 @@ Items/Modules/Devices the controller is using are:
 - ADS1115 16-bit Analog to Digital Converter
 - 6-way Relay Module (5V, activate on LOW)
 - Rotary Encoder Switch
-- 3x Mosfet Module to switch 12V LED-Indicators
 - 3 12V LED-Indicators (red, yellow, green)
 - SD-Card Module
 - 20A AC-current sensor module to be connected on the inverter AC connection
 - ESP01 Module (ESP8266)
-- AMS1117 3,3V Version Buck converter to power ESP01
 - 12 way Rotary Switch as Mode selector
-- 13x 10k, 2x 1k, 1x 2k, 1x 830R 1/4W resistors
+- iverse 1/4W resistors and electrolytic capacitors
 - diverse male, female headers and sockets
 
 The controller is switching:
