@@ -1,4 +1,4 @@
-# AC-Powerwall *current software version 1.01.04/02.12.2020* -= NEW! second Display (0,96inch OLED) added!
+# AC-Powerwall *current software version 1.01.07/05.12.2020* -= NEW! second Display (0,96inch OLED) added!
 
 This repository contains code and documentation files from my YouTube "The AC-Powerwall Project" on "Roland W" channel.
 Playlist: https://www.youtube.com/playlist?list=PLz3GU7wMX4_P-K7Ht42iucupu2CXGZh10
