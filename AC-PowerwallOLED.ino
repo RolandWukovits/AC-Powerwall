@@ -47,10 +47,9 @@
 
 #define BLYNK_PRINT Serial
 char auth[] = "hJtO4MBnvSj8LjQehI8Uphq_sDgelhUn";
-char ssid[] = "Tar2G";
-char pass[] = "0956498211";
-//char ssid[] = "THEHILLSIDENET_R4";
-//char pass[] = "greatwings";
+char ssid[] = "yourSSID";
+char pass[] = "yourPASS";
+
 
 WidgetLED led1(V15);
 WidgetLED led2(V1);
