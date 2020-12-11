@@ -918,8 +918,9 @@ if (millis()>=(ledstartmillis+ledinterval)) {
  if (mode<9){
 
   if (wifidis==0){
-    
-  if (!Blynk.connected()and connectCounter<3) {                               //If Blynk is not connected
+  
+  if (connectCounter<3){
+  if (!Blynk.connected()) {                               //If Blynk is not connected
     linkState = 0;
     connectCounter++;
     wdt_reset();
@@ -930,7 +931,8 @@ if (millis()>=(ledstartmillis+ledinterval)) {
    Blynk.run();
    wdt_reset(); 
   }
-  
+  }
+   
   }
    
   if (linkState==1){  
@@ -5040,7 +5042,7 @@ if (inverter==1 and mode<9){
   minCurrent=65535;
   maxCurrent=1;
    
-  for (aquisitioncounter=0;aquisitioncounter<=201;aquisitioncounter++){
+  for (aquisitioncounter=0;aquisitioncounter<=165;aquisitioncounter++){
      
    readCurrent=ads.readADC_SingleEnded(1);  
 
