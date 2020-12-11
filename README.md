@@ -22,7 +22,7 @@ Items/Modules/Devices the controller (Board Version 1.0 and up) is using are:
 - 20A AC-current sensor module to be connected on the inverter AC connection
 - ESP01 Module (ESP8266)
 - 12 way Rotary Switch as Mode selector
-- iverse 1/4W resistors and electrolytic capacitors
+- diverse 1/4W resistors and electrolytic capacitors
 - diverse male, female headers and sockets
 
 The controller is switching:
@@ -31,14 +31,14 @@ The controller is switching:
 - Fans
 
 Logic:
-- 2 metered modes, by reading out a meter via Modbus
+- 2 metered modes, by reading out a SDM meter via Modbus (SDM120, SDM 630, X835, etc)
 - 1 Timer mode using 2 programmable timers
 - 1 Mixed metered/timer mode (M1/T1)
 - 4 manual modes (3 for chargers, 1 for discharge)
 - 4 setting modes (limits, parameters, timers, clock)
 - Battery logic to be customized. You will have to enter your particular voltage curve of your battery. SOC can be 
   calculated with enough precision even for LIFEPO chemistry but requires some effort :) You would still have to use a
-  Coulomb-meter for monitoring, but you can reset it from information you get from the controller.
+  Coulomb-meter for more exact monitoring, but you can reset it from information you get from the controller.
 
 Monitoring:
 - The controller is connecting to the IoT platform Blynk
