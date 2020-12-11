@@ -8,7 +8,7 @@ While it is appreciated to give an appropriate donation if you have used this co
 The project is still ongoing!!! Files are constantly changing while code is still developed. Please ask for details on progress!
 
 Items/Modules/Devices the controller (Board Version 1.0 and up) is using are:
-- Arduino Mega or compatible 2560 board
+- Arduino Mega or compatible 2560 board (Mega 2560 Pro board is used in the controller)
 - DS3231 Real Time Clock
 - Max485 Modbus Module
 - DHT11 Temperature and Humidity sensor
