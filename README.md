@@ -1,4 +1,4 @@
-# AC-Powerwall *current software version 1.01.10/08.12.2020* -= NEW! second Display (0,96inch OLED) added!
+# AC-Powerwall *current software version 1.02.00/11.12.2020*
 
 This repository contains code and documentation files from my YouTube "The AC-Powerwall Project" on "Roland W" channel.
 Playlist: https://www.youtube.com/playlist?list=PLz3GU7wMX4_P-K7Ht42iucupu2CXGZh10
@@ -7,7 +7,7 @@ While it is appreciated to give an appropriate donation if you have used this co
 
 The project is still ongoing!!! Files are constantly changing while code is still developed. Please ask for details on progress!
 
-Items/Modules/Devices the controller (Board Version 2.0 and up) is using are:
+Items/Modules/Devices the controller (Board Version 1.0 and up) is using are:
 - Arduino Mega or compatible 2560 board
 - DS3231 Real Time Clock
 - Max485 Modbus Module
@@ -26,7 +26,7 @@ Items/Modules/Devices the controller (Board Version 2.0 and up) is using are:
 - diverse male, female headers and sockets
 
 The controller is switching:
-- 2 battery chargers (AC small vehicle chargers, use 2 different power outputs)
+- 3 battery chargers (AC small vehicle chargers (max 10A on AC side), use 2 different power outputs (optimal is if Charger 1 power has half output of Charger 2), Charger 3 is optional, and is creating a virtual Charger together with Charger 2)
 - 1 inverter via DC-contactor, including a precharge bypass
 - Fans
 
