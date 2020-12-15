@@ -1,4 +1,4 @@
-# AC-Powerwall *current software version 1.02.00/11.12.2020*
+# AC-Powerwall *current software version 1.02.02/13.12.2020*
 
 This repository contains code and documentation files from my YouTube "The AC-Powerwall Project" on "Roland W" channel.
 Playlist: https://www.youtube.com/playlist?list=PLz3GU7wMX4_P-K7Ht42iucupu2CXGZh10
@@ -7,7 +7,7 @@ While it is appreciated to give an appropriate donation if you have used this co
 
 The project is still ongoing!!! Files are constantly changing while code is still developed. Please ask for details on progress!
 
-Items/Modules/Devices the controller (Board Version 1.0 and up) is using are:
+Items/Modules/Devices the controller (Board Version 1 and 2) is using are:
 - Arduino Mega or compatible 2560 board (Mega 2560 Pro board is used in the controller)
 - DS3231 Real Time Clock
 - Max485 Modbus Module
@@ -31,7 +31,7 @@ The controller is switching:
 - Fans
 
 Logic:
-- 2 metered modes, by reading out a SDM meter via Modbus (SDM120, SDM 630, X835, etc)
+- 2 metered modes, by reading out a SDM meter via Modbus (SDM120, SDM630, X835, etc)
 - 1 Timer mode using 2 programmable timers
 - 1 Mixed metered/timer mode (M1/T1)
 - 4 manual modes (3 for chargers, 1 for discharge)
