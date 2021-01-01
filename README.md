@@ -25,7 +25,7 @@ Items/Modules/Devices the controller (Board Version 1 and 2) is using are:
 - diverse male, female headers and sockets
 
 The controller is switching:
-- 2 or 3 battery chargers (AC small vehicle chargers (max 10A on AC side), use 2 different power outputs (optimal is if Charger 1 power has half output of Charger 2), Charger 3 is optional, and is creating a virtual Charger together with Charger 2)
+- 2 or 3 battery chargers (AC small vehicle chargers (max 10A on AC side), use 2 different power outputs (ideally if Charger 1 power output is half of Charger 2 power output), Charger 3 is optional, and is creating a virtual Charger together with Charger 2)
 - 1 inverter via DC-contactor, including a precharge bypass
 - Fans
 
