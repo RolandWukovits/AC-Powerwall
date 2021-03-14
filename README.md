@@ -4,6 +4,8 @@ This repository contains code and documentation files from my YouTube "The AC-Po
 Playlist: https://www.youtube.com/playlist?list=PLz3GU7wMX4_P-K7Ht42iucupu2CXGZh10
 It is meant for a controller based on a Mega 2560, and files can be used freely for private purpose, while it is appreciated to give an appropriate donation if you have used this code for your work. Thx
 
+Board Version 1/2 and Version 3 are not pin compatible!
+
 The project is still ongoing!!! Files are constantly changing while code is still developed. Please ask for details on progress!
 Please check the Manual Edit 2.
 
