@@ -24,6 +24,10 @@ Items/Modules/Devices the controller (Board Version 1 and 2) is using are:
 - 12 way Rotary Switch as Mode selector
 - diverse 1/4W resistors and electrolytic capacitors
 - diverse male, female headers and sockets
+additional devices Board Version 3:
+- external watchdog as shown on my YT-channel
+- W5500 Ethernet module
+- 3 temperature probes
 
 The controller is switching:
 - 2 or 3 battery chargers (AC small vehicle chargers (max 10A on AC side), use 2 different power outputs (ideally if Charger 1 power output is half of Charger 2 power output), Charger 3 is optional, and is creating a virtual Charger together with Charger 2)
