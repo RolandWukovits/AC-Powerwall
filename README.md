@@ -1,4 +1,4 @@
-# AC-Powerwall *current software version 1.02.12/29.01.2021  and version 1.03.02/14.03.2021*
+# AC-Powerwall *current software version 1.02.13/06.02.2021  and version 1.03.02/14.03.2021*
 
 This repository contains code and documentation files from my YouTube "The AC-Powerwall Project" on "Roland W" channel.
 Playlist: https://www.youtube.com/playlist?list=PLz3GU7wMX4_P-K7Ht42iucupu2CXGZh10
