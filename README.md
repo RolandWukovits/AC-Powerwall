@@ -26,6 +26,7 @@ Items/Modules/Devices the controller (Board Version 1 and 2) is using are:
 - 12 way Rotary Switch as Mode selector
 - diverse 1/4W resistors and electrolytic capacitors
 - diverse male, female headers and sockets
+
 Additional devices Board Version 3:
 - external watchdog as shown on my YT-channel
 - W5500 Ethernet module
