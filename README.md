@@ -23,15 +23,16 @@ Items/Modules/Devices the controller (Board Version 1 and 2) is using are:
 - SD-Card Module
 - 20A AC-current sensor module to be connected on the inverter AC connection
 - ESP01 Module (ESP8266)
-- INA219 Shunt-sensor
-- 12 way Rotary Switch as Mode selector, Button Switch
+- 12 way Rotary Switch as Mode selector
 - diverse 1/4W resistors and electrolytic capacitors
 - diverse male, female headers and sockets
 
-Additional devices Board Version 3:
+Additional devices Board Version 3 (incl. Battery Monitor):
 - external watchdog as shown on my YT-channel
 - W5500 Ethernet module
+- INA219 Shunt-sensor
 - 3 temperature probes
+- Button Switch
 
 The controller is switching:
 - 2 or 3 battery chargers (AC small vehicle chargers (max 10A on AC side), use 2 different power outputs (ideally if Charger 1 power output is half of Charger 2 power output), Charger 3 is optional, and is creating a virtual Charger together with Charger 2)
