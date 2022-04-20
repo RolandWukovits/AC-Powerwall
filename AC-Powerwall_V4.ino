@@ -48,11 +48,9 @@
 #include <CD74HC4067.h>
 
 #define BLYNK_PRINT Serial
-char auth[] = "5oE6DZFP-Y2vsTRm8qWl_uk4Rk_kYquU";
-//char ssid[] = "Tar2G";
-//char pass[] = "0956498211";
-char ssid[] = "THEHILLSIDENET_R4";
-char pass[] = "greatwings";
+char auth[] = "Your Auth";
+char ssid[] = "yourSSID";
+char pass[] = "yourPW";
 
 WidgetLED led1(V15);
 WidgetLED led2(V1);
